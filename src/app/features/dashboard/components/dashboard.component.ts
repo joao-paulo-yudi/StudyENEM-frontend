@@ -2,8 +2,8 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ApiService, PerformanceSummaryDto } from '../../core/api.service';
-import { StudentService } from '../../core/student.service';
+import { ApiService, PerformanceSummaryDto } from '../../../core/api.service';
+import { StudentService } from '../../../core/student.service';
 
 @Component({
   selector: 'app-dashboard',

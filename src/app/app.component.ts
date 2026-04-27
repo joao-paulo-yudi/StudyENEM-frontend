@@ -9,7 +9,6 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
     <header class="header">
       <div class="container-lg flex items-center justify-between" style="height:100%">
         <a routerLink="/home" class="logo">
-          <span class="logo-icon">S</span>
           <span>StudyENEM</span>
         </a>
         <nav class="nav">
