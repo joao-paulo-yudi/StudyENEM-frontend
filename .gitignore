@@ -1,0 +1,16 @@
+# Angular / Node
+node_modules/
+dist/
+.angular/
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vs/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
