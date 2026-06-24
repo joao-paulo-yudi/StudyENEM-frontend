@@ -40,31 +40,11 @@
       <div class="card">
         <div class="panel-head">
           <h3 class="panel-title">Evolução do aproveitamento</h3>
-          <div class="panel-sub">Últimos {{evoData(d).length}} simulados</div>
+          <div class="panel-sub">Últimos {{evoAttempts().length}} simulados</div>
         </div>
-        @if (evoData(d).length >= 2) {
-          <svg viewBox="0 0 220 100" preserveAspectRatio="none" class="evo-svg">
-            <defs>
-              <linearGradient id="dGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="#F26B3A" stop-opacity="0.18"/>
-                <stop offset="100%" stop-color="#F26B3A" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-            @for (g of gridLines; track g) {
-              <line x1="10" x2="210" [attr.y1]="10+(1-g/100)*80" [attr.y2]="10+(1-g/100)*80"
-                stroke="#F0F2F7" stroke-width="0.5"/>
-              <text [attr.x]="6" [attr.y]="14+(1-g/100)*80" font-size="7" fill="#BABDCC" text-anchor="end">{{g}}%</text>
-            }
-            <path [attr.d]="evoArea(d)" fill="url(#dGrad)"/>
-            <path [attr.d]="evoPath(d)" stroke="#F26B3A" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            @for (pt of evoPoints(d); track $index) {
-              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="2.5" fill="#fff" stroke="#F26B3A" stroke-width="1.2"/>
-            }
-          </svg>
-          <div class="evo-axis">
-            @for (e of evoData(d); track $index) {
-              <span>{{fmtShort(e.date)}}</span>
-            }
+        @if (evoAttempts().length >= 2) {
+          <div class="chart-box">
+            <app-chart type="line" [data]="evoChart().data" [options]="evoChart().options" />
           </div>
         } @else {
           <div class="chart-empty">Faça mais simulados para visualizar a evolução</div>
@@ -78,22 +58,8 @@
           <div class="panel-sub">Desempenho comparativo</div>
         </div>
         @if (d.byArea.length > 0) {
-          <div class="radar-wrap">
-            <svg viewBox="0 0 200 200" class="radar-svg">
-              <!-- Grid circles -->
-              @for (r of [25,50,75,100]; track r) {
-                <polygon [attr.points]="radarGrid(r)" fill="none" stroke="#F0F2F7" stroke-width="0.8"/>
-              }
-              <!-- Axes -->
-              @for (a of radarAxes(); track $index) {
-                <line x1="100" y1="100" [attr.x2]="a.x2" [attr.y2]="a.y2" stroke="#E5E7EB" stroke-width="0.8"/>
-                <text [attr.x]="a.lx" [attr.y]="a.ly" font-size="8.5" fill="#7B8597" text-anchor="middle">{{a.label}}</text>
-              }
-              <!-- Data polygon -->
-              @if (radarData(d)) {
-                <polygon [attr.points]="radarData(d)" fill="#F26B3A" fill-opacity="0.15" stroke="#F26B3A" stroke-width="1.5"/>
-              }
-            </svg>
+          <div class="chart-box chart-box-radar">
+            <app-chart type="radar" [data]="radarChart().data" [options]="radarChart().options" />
           </div>
         } @else {
           <div class="chart-empty">Sem dados de área ainda</div>

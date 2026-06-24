@@ -18,7 +18,6 @@ export class LoginComponent {
   private router = inject(Router);
 
   mode = signal<'login' | 'signup'>('login');
-  // Pré-preenchido com a conta de teste para facilitar a demonstração.
   email = 'joao@studyenem.com';
   password = '1234';
   name = '';
@@ -26,12 +25,6 @@ export class LoginComponent {
   loading = signal(false);
   error = signal('');
   info = signal('');
-
-  readonly features = [
-    { icon: '<path d="M3 21 H21 M6 17 V11 M11 17 V7 M16 17 V13"/>', text: 'Análise de acertos por área e por tópico' },
-    { icon: '<path d="M9 12 L11 14 L15 9 M5 4 H19 V20 H5 Z"/>', text: 'Plano de estudos personalizado e adaptativo' },
-    { icon: '<path d="M3 17 L9 11 L13 15 L21 7 M15 7 H21 V13"/>', text: 'Evolução temporal e comparação entre simulados' },
-  ];
 
   toggleMode() {
     this.mode.set(this.mode() === 'login' ? 'signup' : 'login');

@@ -1,14 +1,17 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { ChartData, ChartOptions } from 'chart.js';
 import { ApiService, PerformanceSummaryDto } from '../../core/api.service';
 import { StudentService } from '../../core/student.service';
 import { getAreaByName } from '../../core/areas.config';
+import { buildEvolutionChart } from '../../core/charts';
+import { ChartComponent } from '../../shared/chart/chart.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ChartComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -19,7 +22,11 @@ export class HomeComponent implements OnInit {
 
   data: PerformanceSummaryDto | null = null;
   readonly circumference = 2 * Math.PI * 54;
-  readonly gridLines = [0, 25, 50, 75, 100];
+
+  // Configuração memoizada do gráfico de evolução (referência estável).
+  evoChartData: ChartData<'line'> | null = null;
+  evoChartOptions: ChartOptions<'line'> = {};
+  evoCount = 0;
 
   get hasStudent() { return !!this.student.name; }
   get firstName() { return (this.student.name ?? '').split(' ')[0]; }
@@ -30,24 +37,6 @@ export class HomeComponent implements OnInit {
   }
   get ringOffset() { return this.circumference - (this.overallPct / 100) * this.circumference; }
   get studyHours() { return this.data ? Math.round(this.data.totalTimeSeconds / 3600) : 0; }
-
-  get evolution() {
-    return (this.data?.recentAttempts ?? []).slice().reverse().slice(0, 6);
-  }
-  get evoPoints() {
-    const d = this.evolution;
-    if (d.length < 2) return [];
-    return d.map((e, i) => ({
-      x: 6 + (i / (d.length - 1)) * 88,
-      y: 6 + (1 - e.score / 100) * 56,
-    }));
-  }
-  get evoPath() { return this.evoPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' '); }
-  get evoArea() {
-    const pts = this.evoPoints;
-    if (!pts.length) return '';
-    return this.evoPath + ` L ${pts[pts.length - 1].x} 62 L ${pts[0].x} 62 Z`;
-  }
 
   get areaPerf() {
     return (this.data?.byArea ?? []).map(a => {
@@ -72,9 +61,19 @@ export class HomeComponent implements OnInit {
 
   load() {
     this.api.getPerformance(this.student.name!).subscribe({
-      next: d => this.data = d,
-      error: () => this.data = { studentName: '', totalAttempts: 0, totalQuestions: 0, totalCorrect: 0, totalTimeSeconds: 0, byArea: [], bySubject: [], recentAttempts: [], studyPlan: [] },
+      next: d => this.setData(d),
+      error: () => this.setData({ studentName: '', totalAttempts: 0, totalQuestions: 0, totalCorrect: 0, totalTimeSeconds: 0, byArea: [], bySubject: [], recentAttempts: [], studyPlan: [] }),
     });
+  }
+
+  private setData(d: PerformanceSummaryDto) {
+    this.data = d;
+    // Últimos 6 simulados em ordem cronológica (mais antigo → mais recente).
+    const evo = [...d.recentAttempts].slice(0, 6).reverse();
+    this.evoCount = evo.length;
+    const { data, options } = buildEvolutionChart(evo);
+    this.evoChartData = data;
+    this.evoChartOptions = options;
   }
 
   go(r: string) { this.router.navigate(['/' + r]); }
@@ -82,7 +81,6 @@ export class HomeComponent implements OnInit {
     this.router.navigate(['/simulado'], { queryParams: { area: areaId } });
   }
 
-  fmtShort(s: string) { return new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }); }
   fmtLong(s: string) { return new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' }); }
   fmtMin(sec: number) { return `${Math.round(sec / 60)}min`; }
   getDay(s: string) { return new Date(s).getDate(); }

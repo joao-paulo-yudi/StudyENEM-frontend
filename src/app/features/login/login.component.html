@@ -26,20 +26,7 @@
         Faça simulados do ENEM, acompanhe seu desempenho em dashboards interativos e receba
         recomendações personalizadas para cada área do conhecimento.
       </p>
-
-      <div class="brand-features">
-        @for (f of features; track f.text) {
-          <div class="brand-feature">
-            <div class="brand-feature-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD166" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" [innerHTML]="f.icon"></svg>
-            </div>
-            <div class="brand-feature-text">{{ f.text }}</div>
-          </div>
-        }
-      </div>
     </div>
-
-    <div class="brand-footer">TCC · TAC1 2026 · StudyENEM</div>
   </div>
 
   <!-- Painel do formulário (direita) -->
@@ -129,12 +116,6 @@
           {{ mode() === 'login' ? 'Cadastre-se grátis' : 'Fazer login' }}
         </button>
       </div>
-
-      @if (mode() === 'login') {
-        <div class="test-hint">
-          Conta de teste: <b>joao&#64;studyenem.com</b> · senha <b>1234</b>
-        </div>
-      }
     </form>
   </div>
 </div>

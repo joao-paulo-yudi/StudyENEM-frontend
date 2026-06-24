@@ -68,27 +68,9 @@
               </div>
             </div>
             <div class="evo-chart">
-              @if (evolution.length >= 2) {
-                <svg viewBox="0 0 100 70" preserveAspectRatio="none" class="evo-svg">
-                  <defs>
-                    <linearGradient id="evGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#F26B3A" stop-opacity="0.15"/>
-                      <stop offset="100%" stop-color="#F26B3A" stop-opacity="0"/>
-                    </linearGradient>
-                  </defs>
-                  @for (g of gridLines; track g) {
-                    <line [attr.x1]="6" [attr.x2]="94" [attr.y1]="6+(1-g/100)*56" [attr.y2]="6+(1-g/100)*56" stroke="#F0F2F7" stroke-width="0.4"/>
-                  }
-                  <path [attr.d]="evoArea" fill="url(#evGrad)"/>
-                  <path [attr.d]="evoPath" stroke="#F26B3A" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                  @for (pt of evoPoints; track $index) {
-                    <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="1.5" fill="#fff" stroke="#F26B3A" stroke-width="0.8"/>
-                  }
-                </svg>
-                <div class="evo-axis">
-                  @for (e of evolution; track $index) {
-                    <span>{{fmtShort(e.date)}}</span>
-                  }
+              @if (evoCount >= 2 && evoChartData) {
+                <div class="chart-box">
+                  <app-chart type="line" [data]="evoChartData" [options]="evoChartOptions" />
                 </div>
               } @else {
                 <div class="empty-note">Faça mais simulados para ver a evolução</div>
@@ -139,7 +121,7 @@
             <div class="reco-body">
               <div class="reco-label">Recomendação inteligente</div>
               <div class="reco-title">
-                Foque em <span class="reco-area">{{weakest.short}}</span> — só {{weakest.pct}}% de aproveitamento
+                Foque em <span class="reco-area">{{weakest.short}}</span>, só {{weakest.pct}}% de aproveitamento
               </div>
               <div class="reco-sub">Um simulado focado pode melhorar sua média geral.</div>
             </div>
