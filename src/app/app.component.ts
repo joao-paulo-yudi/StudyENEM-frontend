@@ -29,7 +29,7 @@ export class AppComponent {
       filter(e => e instanceof NavigationEnd)
     ).subscribe((e: any) => {
       const url: string = e.urlAfterRedirects;
-      this.fullscreen = url.includes('/simulado/run');
+      this.fullscreen = url.includes('/simulado/run') || url.startsWith('/login');
       this.activeRoute = url.replace(/^\//, '').split('/')[0] || 'home';
     });
   }

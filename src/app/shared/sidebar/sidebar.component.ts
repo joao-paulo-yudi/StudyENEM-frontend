@@ -90,6 +90,12 @@ const NAV = [
           <div style="font-size:13px;font-weight:600;color:#0F1B3D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ studentName }}</div>
           <div style="font-size:11px;color:#7B8597">Estudante ENEM</div>
         </div>
+        <button (click)="logout()" title="Sair" aria-label="Sair"
+                style="background:none;border:none;cursor:pointer;padding:6px;color:#7B8597;display:grid;place-items:center;flex-shrink:0">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21 H5 a2 2 0 0 1 -2 -2 V5 a2 2 0 0 1 2 -2 h4"/><path d="M16 17 L21 12 L16 7"/><path d="M21 12 H9"/>
+          </svg>
+        </button>
       </div>
     </aside>
   `,
@@ -112,4 +118,9 @@ export class SidebarComponent {
   }
 
   go(route: string) { this.router.navigate(['/' + route]); }
+
+  logout() {
+    this.studentService.clear();
+    this.router.navigate(['/login']);
+  }
 }

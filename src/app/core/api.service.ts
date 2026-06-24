@@ -8,6 +8,10 @@ export interface QuestionDto {
   statement: string; optionA: string; optionB: string; optionC: string; optionD: string; optionE: string;
 }
 
+export interface AuthUserDto { id: number; name: string; email: string; }
+export interface LoginDto { identifier: string; password: string; }
+export interface RegisterDto { name: string; email: string; password: string; }
+
 export interface StartAttemptDto { studentName: string; mode: string; count?: number; year?: number; area?: string; }
 export interface SubmitAnswerDto { questionId: number; selectedOption: string; }
 export interface SubmitAttemptDto { attemptId: number; timeTakenSeconds?: number; answers: SubmitAnswerDto[]; }
@@ -41,6 +45,9 @@ export interface PerformanceSummaryDto {
 export class ApiService {
   private http = inject(HttpClient);
   private base = environment.apiUrl;
+
+  login(dto: LoginDto) { return this.http.post<AuthUserDto>(`${this.base}/auth/login`, dto); }
+  register(dto: RegisterDto) { return this.http.post<AuthUserDto>(`${this.base}/auth/register`, dto); }
 
   getYears() { return this.http.get<number[]>(`${this.base}/questions/years`); }
   getAreas() { return this.http.get<string[]>(`${this.base}/questions/areas`); }

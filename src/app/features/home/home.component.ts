@@ -12,29 +12,6 @@ import { ExamStateService } from '../../core/exam-state.service';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    @if (!hasStudent) {
-      <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px">
-        <div class="card" style="max-width:440px;width:100%;padding:40px;text-align:center">
-          <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px">
-            <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
-              <rect x="2" y="2" width="36" height="36" rx="10" fill="#0F1B3D"/>
-              <path d="M11 26 L11 14 L17 14 L17 26 Z" fill="#F26B3A"/>
-              <path d="M20 26 L20 18 L26 18 L26 26 Z" fill="#FFD166"/>
-              <path d="M29 26 L29 10 L31 10 L31 26 Z" fill="#8DD5C0"/>
-            </svg>
-            <span style="font-size:22px;font-weight:700;color:#0F1B3D;letter-spacing:-.02em">StudyENEM</span>
-          </div>
-          <h2 style="font-size:24px;font-weight:700;color:#0F1B3D;margin-bottom:8px;letter-spacing:-.025em">Bem-vindo</h2>
-          <p style="color:#7B8597;font-size:14px;margin-bottom:28px">Informe seu nome para acompanhar seu desempenho personalizado</p>
-          <input [(ngModel)]="nameInput" placeholder="Seu nome completo" style="width:100%;margin-bottom:14px"
-                 (keyup.enter)="saveName()" />
-          <button class="btn btn-primary btn-md" style="width:100%" (click)="saveName()" [disabled]="!nameInput.trim()">
-            Começar agora
-          </button>
-        </div>
-      </div>
-    }
-
     @if (hasStudent) {
       <div class="page">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px">
@@ -259,7 +236,6 @@ export class HomeComponent implements OnInit {
   private examState = inject(ExamStateService);
 
   data: PerformanceSummaryDto | null = null;
-  nameInput = '';
   readonly circumference = 2 * Math.PI * 54;
   readonly gridLines = [0, 25, 50, 75, 100];
 
@@ -311,10 +287,6 @@ export class HomeComponent implements OnInit {
   }
 
   ngOnInit() { if (this.student.name) this.load(); }
-
-  saveName() {
-    if (this.nameInput.trim()) { this.student.name = this.nameInput.trim(); this.load(); }
-  }
 
   load() {
     this.api.getPerformance(this.student.name!).subscribe({
