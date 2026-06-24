@@ -8,16 +8,7 @@ import { SidebarComponent } from './shared/sidebar/sidebar.component';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet, CommonModule, SidebarComponent],
-  template: `
-    <div class="app-shell">
-      @if (!fullscreen) {
-        <app-sidebar [activeRoute]="activeRoute" />
-      }
-      <div class="main-scroll">
-        <router-outlet />
-      </div>
-    </div>
-  `,
+  templateUrl: './app.component.html',
 })
 export class AppComponent {
   private router = inject(Router);

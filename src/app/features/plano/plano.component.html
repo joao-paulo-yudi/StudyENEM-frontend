@@ -1,0 +1,99 @@
+<div class="page">
+  <header class="plano-head">
+    <div>
+      <h1 class="plano-title">Plano de Estudos</h1>
+      <p class="plano-subtitle">Tópicos priorizados com base no seu desempenho</p>
+    </div>
+    <button class="btn btn-primary btn-md" (click)="go('simulado')">
+      Praticar agora
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12H19M13 6l6 6-6 6"/></svg>
+    </button>
+  </header>
+
+  @if (!data()) {
+    <div class="loading">Carregando...</div>
+  }
+
+  @if (data(); as d) {
+    @if (d.studyPlan.length === 0) {
+      <div class="card empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ECEEF3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <div class="empty-title">Plano vazio</div>
+        <div class="empty-text">Faça simulados para receber sugestões personalizadas.</div>
+        <button class="btn btn-primary btn-md" (click)="go('simulado')">Fazer meu primeiro simulado</button>
+      </div>
+    } @else {
+      <!-- Progress overview -->
+      <div class="grid-4 overview">
+        <div class="card stat-card">
+          <div class="stat-label">Tópicos no plano</div>
+          <div class="stat-value">{{d.studyPlan.length}}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Prioridade alta</div>
+          <div class="stat-value stat-danger">{{highCount()}}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Prioridade média</div>
+          <div class="stat-value stat-warn">{{medCount()}}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Dominando</div>
+          <div class="stat-value stat-success">{{lowCount()}}</div>
+        </div>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="filters">
+        @for (f of filters; track f.id) {
+          <button (click)="filter.set(f.id)" class="filter-chip" [class.filter-chip-active]="filter() === f.id">
+            {{f.label}}
+          </button>
+        }
+      </div>
+
+      <!-- Plan items -->
+      <div class="plan-list">
+        @for (item of filtered(); track item.topic) {
+          <div class="card plan-item">
+            <div class="plan-item-row">
+              <div class="plan-accent" [style.background]="areaColor(item.area)"></div>
+              <div class="plan-content">
+                <div class="plan-main">
+                  <div class="plan-topic-row">
+                    <span class="plan-topic">{{item.topic}}</span>
+                    <span class="priority-badge"
+                      [style.background]="priorityBg(item.priority)"
+                      [style.color]="priorityColor(item.priority)">
+                      {{item.priority}}
+                    </span>
+                  </div>
+                  <div class="plan-reason">{{item.reason}}</div>
+                </div>
+
+                <div class="plan-stats">
+                  <div class="plan-mastery">
+                    <div class="plan-mastery-pct" [style.color]="masteryColor(item.mastery)">{{item.mastery}}%</div>
+                    <div class="plan-mastery-label">domínio</div>
+                  </div>
+                  <div class="plan-meter">
+                    <div class="bar-track">
+                      <div class="bar-fill" [style.width.%]="item.mastery" [style.background]="masteryColor(item.mastery)"></div>
+                    </div>
+                    <div class="plan-attempts">{{item.attempts}} tentativas</div>
+                  </div>
+                  <div class="plan-tag" [style.background]="areaSoft(item.area)" [style.color]="areaColor(item.area)">
+                    <span class="dot-sm" [style.background]="areaColor(item.area)"></span>
+                    {{areaShort(item.area)}}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

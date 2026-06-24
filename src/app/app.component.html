@@ -1,0 +1,8 @@
+<div class="app-shell">
+  @if (!fullscreen) {
+    <app-sidebar [activeRoute]="activeRoute" />
+  }
+  <div class="main-scroll">
+    <router-outlet />
+  </div>
+</div>

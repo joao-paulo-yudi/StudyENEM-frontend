@@ -1,0 +1,172 @@
+<div class="page">
+  <header class="dsp-head">
+    <h1 class="dsp-title">Desempenho</h1>
+    <p class="dsp-subtitle">Análise detalhada da sua evolução nos estudos</p>
+  </header>
+
+  @if (!data()) {
+    <div class="loading">Carregando...</div>
+  }
+
+  @if (data(); as d) {
+    <!-- KPIs -->
+    <div class="grid-4 kpi-row">
+      <div class="card stat-card">
+        <div class="stat-label">Simulados</div>
+        <div class="stat-value">{{d.totalAttempts}}</div>
+        <div class="stat-sub">total realizados</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Questões</div>
+        <div class="stat-value">{{d.totalQuestions}}</div>
+        <div class="stat-sub">{{d.totalCorrect}} acertos</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Aproveitamento</div>
+        <div class="stat-value" [style.color]="overallPct(d) >= 60 ? '#059669' : overallPct(d) >= 40 ? '#B8841C' : '#C73A1E'">
+          {{overallPct(d)}}%
+        </div>
+        <div class="stat-sub">média geral</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Horas estudadas</div>
+        <div class="stat-value">{{studyHours(d)}}h</div>
+        <div class="stat-sub">tempo total</div>
+      </div>
+    </div>
+
+    <div class="grid-2 chart-row">
+      <!-- Evolution chart -->
+      <div class="card">
+        <div class="panel-head">
+          <h3 class="panel-title">Evolução do aproveitamento</h3>
+          <div class="panel-sub">Últimos {{evoData(d).length}} simulados</div>
+        </div>
+        @if (evoData(d).length >= 2) {
+          <svg viewBox="0 0 220 100" preserveAspectRatio="none" class="evo-svg">
+            <defs>
+              <linearGradient id="dGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#F26B3A" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#F26B3A" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            @for (g of gridLines; track g) {
+              <line x1="10" x2="210" [attr.y1]="10+(1-g/100)*80" [attr.y2]="10+(1-g/100)*80"
+                stroke="#F0F2F7" stroke-width="0.5"/>
+              <text [attr.x]="6" [attr.y]="14+(1-g/100)*80" font-size="7" fill="#BABDCC" text-anchor="end">{{g}}%</text>
+            }
+            <path [attr.d]="evoArea(d)" fill="url(#dGrad)"/>
+            <path [attr.d]="evoPath(d)" stroke="#F26B3A" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            @for (pt of evoPoints(d); track $index) {
+              <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="2.5" fill="#fff" stroke="#F26B3A" stroke-width="1.2"/>
+            }
+          </svg>
+          <div class="evo-axis">
+            @for (e of evoData(d); track $index) {
+              <span>{{fmtShort(e.date)}}</span>
+            }
+          </div>
+        } @else {
+          <div class="chart-empty">Faça mais simulados para visualizar a evolução</div>
+        }
+      </div>
+
+      <!-- Radar chart -->
+      <div class="card">
+        <div class="panel-head">
+          <h3 class="panel-title">Radar por área</h3>
+          <div class="panel-sub">Desempenho comparativo</div>
+        </div>
+        @if (d.byArea.length > 0) {
+          <div class="radar-wrap">
+            <svg viewBox="0 0 200 200" class="radar-svg">
+              <!-- Grid circles -->
+              @for (r of [25,50,75,100]; track r) {
+                <polygon [attr.points]="radarGrid(r)" fill="none" stroke="#F0F2F7" stroke-width="0.8"/>
+              }
+              <!-- Axes -->
+              @for (a of radarAxes(); track $index) {
+                <line x1="100" y1="100" [attr.x2]="a.x2" [attr.y2]="a.y2" stroke="#E5E7EB" stroke-width="0.8"/>
+                <text [attr.x]="a.lx" [attr.y]="a.ly" font-size="8.5" fill="#7B8597" text-anchor="middle">{{a.label}}</text>
+              }
+              <!-- Data polygon -->
+              @if (radarData(d)) {
+                <polygon [attr.points]="radarData(d)" fill="#F26B3A" fill-opacity="0.15" stroke="#F26B3A" stroke-width="1.5"/>
+              }
+            </svg>
+          </div>
+        } @else {
+          <div class="chart-empty">Sem dados de área ainda</div>
+        }
+      </div>
+    </div>
+
+    <!-- By area table -->
+    <div class="card area-section">
+      <div class="panel-head">
+        <h3 class="panel-title">Desempenho por área</h3>
+      </div>
+      @if (d.byArea.length === 0) {
+        <div class="chart-empty chart-empty-sm">Faça simulados para ver dados por área</div>
+      }
+      <div class="bar-list">
+        @for (a of sortedByArea(d); track a.area) {
+          <div>
+            <div class="bar-head">
+              <div class="bar-label">
+                <span class="dot" [style.background]="areaColor(a.area)"></span>
+                <span class="bar-name">{{areaShort(a.area)}}</span>
+              </div>
+              <div class="bar-meta">
+                <span class="bar-pct" [style.color]="a.pct >= 60 ? '#059669' : a.pct >= 40 ? '#B8841C' : '#C73A1E'">{{a.pct}}%</span>
+                <span class="bar-frac">{{a.correct}}/{{a.total}} acertos</span>
+              </div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="a.pct" [style.background]="areaColor(a.area)"></div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- History table -->
+    <div class="card">
+      <div class="panel-head">
+        <h3 class="panel-title">Histórico de simulados</h3>
+      </div>
+      @if (d.recentAttempts.length === 0) {
+        <div class="chart-empty chart-empty-sm">Nenhum simulado realizado ainda</div>
+      }
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Data</th><th>Modo</th><th>Questões</th><th>Acertos</th><th>Aproveitamento</th><th>Tempo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (h of d.recentAttempts; track h.attemptId) {
+              <tr>
+                <td>{{fmtDate(h.date)}}</td>
+                <td>
+                  <span class="mode-pill">
+                    {{h.mode === 'foco' ? 'Foco · ' + areaShort(h.area) : 'Geral'}}
+                  </span>
+                </td>
+                <td>{{h.total}}</td>
+                <td class="td-correct">{{h.correct}}</td>
+                <td>
+                  <span class="td-pct" [style.color]="h.score >= 60 ? '#059669' : h.score >= 40 ? '#B8841C' : '#C73A1E'">
+                    {{h.score | number:'1.0-0'}}%
+                  </span>
+                </td>
+                <td class="td-muted">{{h.timeTakenSeconds ? fmtMin(h.timeTakenSeconds) : '–'}}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

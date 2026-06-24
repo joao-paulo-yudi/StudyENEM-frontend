@@ -1,0 +1,140 @@
+<div class="login-wrap">
+  <!-- Painel de marca (esquerda) -->
+  <div class="login-brand">
+    <div aria-hidden="true" class="login-blob login-blob-orange"></div>
+    <div aria-hidden="true" class="login-blob login-blob-yellow"></div>
+
+    <div class="brand-top">
+      <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+        <rect x="2" y="2" width="36" height="36" rx="10" fill="#fff"/>
+        <path d="M11 26 L11 14 L17 14 L17 26 Z" fill="#F26B3A"/>
+        <path d="M20 26 L20 18 L26 18 L26 26 Z" fill="#FFD166"/>
+        <path d="M29 26 L29 10 L31 10 L31 26 Z" fill="#8DD5C0"/>
+      </svg>
+      <div>
+        <div class="brand-name">StudyENEM</div>
+        <div class="brand-sub">Learning Analytics</div>
+      </div>
+    </div>
+
+    <div class="brand-hero">
+      <div class="brand-kicker">Estude com inteligência</div>
+      <h1 class="brand-headline">
+        Seu plano de estudos, <span class="brand-accent">guiado por dados</span>.
+      </h1>
+      <p class="brand-desc">
+        Faça simulados do ENEM, acompanhe seu desempenho em dashboards interativos e receba
+        recomendações personalizadas para cada área do conhecimento.
+      </p>
+
+      <div class="brand-features">
+        @for (f of features; track f.text) {
+          <div class="brand-feature">
+            <div class="brand-feature-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFD166" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" [innerHTML]="f.icon"></svg>
+            </div>
+            <div class="brand-feature-text">{{ f.text }}</div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="brand-footer">TCC · TAC1 2026 · StudyENEM</div>
+  </div>
+
+  <!-- Painel do formulário (direita) -->
+  <div class="login-form-pane">
+    <form (ngSubmit)="submit()" class="login-form">
+      <h2 class="form-title">
+        {{ mode() === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta' }}
+      </h2>
+      <p class="form-subtitle">
+        {{ mode() === 'login'
+          ? 'Acesse sua conta para continuar de onde parou.'
+          : 'Comece sua jornada rumo ao ENEM em poucos passos.' }}
+      </p>
+
+      <!-- Social (decorativo) -->
+      <div class="social-group">
+        <button type="button" class="login-social" (click)="socialUnavailable()">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continuar com Google
+        </button>
+        <button type="button" class="login-social" (click)="socialUnavailable()">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <rect x="2" y="2" width="9" height="9" fill="#F25022"/>
+            <rect x="13" y="2" width="9" height="9" fill="#7FBA00"/>
+            <rect x="2" y="13" width="9" height="9" fill="#00A4EF"/>
+            <rect x="13" y="13" width="9" height="9" fill="#FFB900"/>
+          </svg>
+          Continuar com Microsoft
+        </button>
+      </div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <span>ou com e-mail</span>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="fields">
+        @if (mode() === 'signup') {
+          <label class="field">
+            <span class="field-label">Nome completo</span>
+            <input class="login-input" type="text" [(ngModel)]="name" name="name" placeholder="Como devemos te chamar?" autocomplete="name"/>
+          </label>
+        }
+
+        <label class="field">
+          <span class="field-label">E-mail</span>
+          <input class="login-input" type="email" [(ngModel)]="email" name="email" placeholder="voce@email.com" autocomplete="email"/>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Senha</span>
+          <div class="password-wrap">
+            <input class="login-input" [type]="showPw() ? 'text' : 'password'" [(ngModel)]="password" name="password" placeholder="••••••••" autocomplete="current-password"/>
+            <button type="button" (click)="showPw.set(!showPw())"
+                    [attr.aria-label]="showPw() ? 'Ocultar senha' : 'Mostrar senha'" class="password-toggle">
+              @if (showPw()) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3 L21 21"/><path d="M10.6 6.1 A10 10 0 0 1 12 6 c5 0 9 4 10 6 a16 16 0 0 1 -3.4 4.3"/><path d="M6.6 6.6 C3.8 8.1 2 11 2 12 c1 2 5 6 10 6 a10 10 0 0 0 4.4 -1"/><circle cx="12" cy="12" r="2.5"/></svg>
+              } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12 C4 8 8 5 12 5 s8 3 10 7 c-2 4 -6 7 -10 7 s-8 -3 -10 -7Z"/><circle cx="12" cy="12" r="3"/></svg>
+              }
+            </button>
+          </div>
+        </label>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert-error">{{ error() }}</div>
+      }
+      @if (info()) {
+        <div class="alert alert-info">{{ info() }}</div>
+      }
+
+      <button class="btn btn-primary btn-lg submit-btn" type="submit" [disabled]="loading()">
+        @if (loading()) { {{ mode() === 'login' ? 'Entrando...' : 'Criando conta...' }} }
+        @else { {{ mode() === 'login' ? 'Entrar' : 'Criar conta' }} }
+      </button>
+
+      <div class="switch-mode">
+        {{ mode() === 'login' ? 'Não tem uma conta? ' : 'Já tem uma conta? ' }}
+        <button type="button" (click)="toggleMode()" class="switch-link">
+          {{ mode() === 'login' ? 'Cadastre-se grátis' : 'Fazer login' }}
+        </button>
+      </div>
+
+      @if (mode() === 'login') {
+        <div class="test-hint">
+          Conta de teste: <b>joao&#64;studyenem.com</b> · senha <b>1234</b>
+        </div>
+      }
+    </form>
+  </div>
+</div>

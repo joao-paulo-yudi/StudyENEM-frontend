@@ -1,0 +1,140 @@
+<div class="run-shell">
+  <!-- Top bar -->
+  <div class="run-topbar">
+    <div class="run-brand">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+        <rect x="2" y="2" width="36" height="36" rx="10" fill="#F26B3A"/>
+        <path d="M11 26 L11 14 L17 14 L17 26 Z" fill="#fff"/>
+        <path d="M20 26 L20 18 L26 18 L26 26 Z" fill="#fff" opacity=".7"/>
+        <path d="M29 26 L29 10 L31 10 L31 26 Z" fill="#fff" opacity=".4"/>
+      </svg>
+      <span class="run-mode">
+        {{config()?.mode === 'foco' ? 'Foco · ' + (areaShort()) : 'Simulado Geral'}}
+      </span>
+    </div>
+    <div class="run-topright">
+      @if (config()?.timed) {
+        <div class="run-timer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
+          </svg>
+          <span class="run-timer-text">{{timerDisplay()}}</span>
+        </div>
+      }
+      <div class="run-counter">
+        <span class="run-counter-cur">{{current() + 1}}</span> / {{total()}}
+      </div>
+      <button (click)="confirmQuit()" class="run-quit">Sair</button>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="run-progress">
+    <div class="run-progress-fill" [style.width.%]="progressPct()"></div>
+  </div>
+
+  <div class="run-body">
+    <!-- Main question -->
+    <div>
+      <div class="card q-card">
+        <div class="q-meta">
+          <span class="q-num">Questão {{current() + 1}}</span>
+          @if (currentQ()?.area) {
+            <span class="q-tag"
+              [style.background]="areaSoft(currentQ()!.area)"
+              [style.color]="areaColor(currentQ()!.area)">
+              {{areaShortByName(currentQ()!.area)}}
+            </span>
+          }
+          @if (currentQ()?.subject) {
+            <span class="q-tag q-tag-muted">{{currentQ()!.subject}}</span>
+          }
+        </div>
+        <p class="q-statement">{{currentQ()?.statement}}</p>
+        <div class="opt-list">
+          @for (opt of options; track opt.key) {
+            <button class="opt-btn" [class.selected]="answers()[current()] === opt.key" (click)="select(opt.key)">
+              <div class="opt-letter">{{opt.key}}</div>
+              <span class="opt-text">{{currentQ()?.[opt.field]}}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="q-nav">
+        <button class="btn btn-secondary btn-md" [disabled]="current() === 0" (click)="prev()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+          Anterior
+        </button>
+        @if (current() < total() - 1) {
+          <button class="btn btn-primary btn-md" (click)="next()">
+            Próxima
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12H19M13 6l6 6-6 6"/></svg>
+          </button>
+        } @else {
+          <button class="btn btn-primary btn-md" (click)="submit()" [disabled]="submitting()">
+            {{submitting() ? 'Enviando...' : 'Finalizar simulado'}}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="run-aside">
+      <div class="card run-aside-card">
+        <div class="aside-title">Progresso</div>
+        <div class="dot-grid">
+          @for (q of questions(); track $index) {
+            <div class="q-dot"
+              [class.answered]="answers()[$index] && $index !== current()"
+              [class.current]="$index === current()"
+              (click)="goTo($index)"
+              [title]="'Questão ' + ($index + 1)"></div>
+          }
+        </div>
+        <div class="dot-legend">
+          <span class="legend-item">
+            <span class="legend-dot legend-answered"></span> Respondida
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot legend-current"></span> Atual
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="aside-title">Resumo</div>
+        <div class="summary">
+          <div class="summary-line">
+            <span class="summary-muted">Respondidas</span>
+            <span class="summary-strong">{{answeredCount()}} / {{total()}}</span>
+          </div>
+          <div class="summary-track">
+            <div class="summary-fill" [style.width.%]="progressPct()"></div>
+          </div>
+          @if (config()?.timed) {
+            <div class="summary-line summary-line-spaced">
+              <span class="summary-muted">Tempo</span>
+              <span class="summary-strong summary-mono">{{timerDisplay()}}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (showQuitModal()) {
+  <div class="modal-overlay" (click)="showQuitModal.set(false)">
+    <div class="card modal" (click)="$event.stopPropagation()">
+      <h3 class="modal-title">Sair do simulado?</h3>
+      <p class="modal-text">Seu progresso será perdido. Tem certeza que deseja sair?</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary btn-md modal-btn" (click)="showQuitModal.set(false)">Continuar</button>
+        <button class="btn btn-primary btn-md modal-btn modal-btn-danger" (click)="quit()">Sair</button>
+      </div>
+    </div>
+  </div>
+}

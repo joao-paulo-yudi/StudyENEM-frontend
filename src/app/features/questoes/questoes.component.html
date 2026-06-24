@@ -1,0 +1,131 @@
+<div class="page">
+  <header class="q-head">
+    <div>
+      <h1 class="q-title">Banco de Questões</h1>
+      <p class="q-subtitle">Explore e filtre questões por área, assunto e dificuldade</p>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="card filters">
+    <div class="filter-search">
+      <label class="filter-label">Buscar</label>
+      <div class="search-wrap">
+        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA3B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="search-input" [ngModel]="search()" (ngModelChange)="search.set($event); page.set(1)" placeholder="Buscar por conteúdo..."/>
+      </div>
+    </div>
+    <div class="filter-field">
+      <label class="filter-label">Área</label>
+      <select class="filter-select" [ngModel]="selectedArea()" (ngModelChange)="selectedArea.set($event); page.set(1)">
+        <option value="">Todas as áreas</option>
+        @for (a of areas; track a.id) {
+          <option [value]="a.name">{{a.short}}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-field filter-field-sm">
+      <label class="filter-label">Dificuldade</label>
+      <select class="filter-select" [ngModel]="selectedDifficulty()" (ngModelChange)="selectedDifficulty.set($event); page.set(1)">
+        <option value="">Todas</option>
+        <option value="fácil">Fácil</option>
+        <option value="média">Média</option>
+        <option value="difícil">Difícil</option>
+      </select>
+    </div>
+    <button class="btn btn-secondary btn-md" (click)="clearFilters()">Limpar</button>
+  </div>
+
+  <!-- Results count -->
+  <div class="results-count">
+    @if (loading()) { Carregando questões... }
+    @else { <strong>{{filtered().length}}</strong> questões encontradas }
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Carregando...</div>
+  }
+
+  <!-- Questions list -->
+  @if (!loading()) {
+    <div class="q-list">
+      @for (q of paginated(); track q.id) {
+        <div class="card q-item">
+          <div class="q-item-row">
+            <div class="q-accent" [style.background]="areaColor(q.area)"></div>
+            <div class="q-content">
+              <!-- Header -->
+              <div class="q-tags">
+                <span class="q-id">Q.{{q.id}}</span>
+                <span class="q-sep"></span>
+                <span class="q-tag" [style.background]="areaSoft(q.area)" [style.color]="areaColor(q.area)">
+                  {{areaShort(q.area)}}
+                </span>
+                <span class="q-tag q-tag-muted">{{q.subject}}</span>
+                @if (q.topic) {
+                  <span class="q-tag q-tag-muted">{{q.topic}}</span>
+                }
+                <span class="q-tag q-diff" [style.background]="diffBg(q.difficulty)" [style.color]="diffColor(q.difficulty)">
+                  {{q.difficulty}}
+                </span>
+              </div>
+
+              <!-- Statement (collapsed/expanded) -->
+              <p class="q-statement" [class.q-statement-clamped]="!expanded().has(q.id)">
+                {{q.statement}}
+              </p>
+
+              <!-- Options (only when expanded) -->
+              @if (expanded().has(q.id)) {
+                <div class="q-options">
+                  @for (opt of optionsList(q); track opt.key) {
+                    <div class="q-option">
+                      <span class="q-option-key">{{opt.key}}</span>
+                      <span class="q-option-text">{{opt.text}}</span>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- Toggle -->
+              <button class="q-toggle" (click)="toggleExpand(q.id)">
+                @if (expanded().has(q.id)) {
+                  Recolher
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                } @else {
+                  Ver questão completa
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (filtered().length === 0 && !loading()) {
+        <div class="card q-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ECEEF3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="q-empty-icon">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <div class="q-empty-title">Nenhuma questão encontrada</div>
+          <div class="q-empty-text">Tente ajustar os filtros</div>
+        </div>
+      }
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button class="btn btn-secondary btn-md" [disabled]="page() === 1" (click)="prevPage()">
+          ← Anterior
+        </button>
+        <span class="pagination-info">{{page()}} de {{totalPages()}}</span>
+        <button class="btn btn-secondary btn-md" [disabled]="page() === totalPages()" (click)="nextPage()">
+          Próxima →
+        </button>
+      </div>
+    }
+  }
+</div>
