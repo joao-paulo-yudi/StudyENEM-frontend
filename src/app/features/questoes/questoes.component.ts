@@ -1,40 +1,49 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, QuestionDto } from '../../core/api.service';
-import { AREA_LIST, getAreaByName } from '../../core/areas.config';
+import { forkJoin } from 'rxjs';
+import { ApiService, AreaCode, QuestionBankItemDto, QuestionCatalogDto } from '../../core/api.service';
+import { AREA_LIST, areaColor, areaShort, areaSoft } from '../../core/areas.config';
+import { MarkdownPipe } from '../../shared/markdown/markdown.pipe';
 
 @Component({
   selector: 'app-questoes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownPipe],
   templateUrl: './questoes.component.html',
   styleUrl: './questoes.component.css',
 })
 export class QuestoesComponent implements OnInit {
   private api = inject(ApiService);
 
-  questions = signal<QuestionDto[]>([]);
+  questions = signal<QuestionBankItemDto[]>([]);
+  catalog = signal<QuestionCatalogDto | null>(null);
   loading = signal(true);
+  loadError = signal(false);
   expanded = signal<Set<number>>(new Set());
+  revealed = signal<Set<number>>(new Set());
   page = signal(1);
 
   search = signal('');
-  selectedArea = signal('');
-  selectedDifficulty = signal('');
+  areaCode = signal<AreaCode | ''>('');
+  subjectId = signal(0);
+  topicId = signal(0);
+  year = signal(0);
 
   readonly areas = AREA_LIST;
   readonly perPage = 10;
 
+  subjects = computed(() => this.catalog()?.areas.find(a => a.code === this.areaCode())?.subjects ?? []);
+  topics = computed(() => this.subjects().find(s => s.id === this.subjectId())?.topics ?? []);
+
   filtered = computed(() => {
-    const q = this.questions();
-    const s = this.search().toLowerCase();
-    const a = this.selectedArea();
-    const d = this.selectedDifficulty();
-    return q.filter(item =>
-      (!s || item.statement.toLowerCase().includes(s) || item.topic?.toLowerCase().includes(s) || item.subject.toLowerCase().includes(s)) &&
-      (!a || item.area === a) &&
-      (!d || item.difficulty === d)
+    const s = this.normalize(this.search());
+    return this.questions().filter(q =>
+      (!this.areaCode() || q.areaCode === this.areaCode()) &&
+      (!this.subjectId() || q.subjectId === this.subjectId()) &&
+      (!this.topicId() || q.topicId === this.topicId()) &&
+      (!this.year() || q.year === this.year()) &&
+      (!s || this.normalize(`${q.statement} ${q.topic} ${q.subject} q${q.number}`).includes(s))
     );
   });
 
@@ -45,38 +54,48 @@ export class QuestoesComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.api.getQuestions().subscribe({
-      next: qs => { this.questions.set(qs); this.loading.set(false); },
-      error: () => this.loading.set(false),
+    forkJoin({ catalog: this.api.getCatalog(), questions: this.api.getQuestionBank() }).subscribe({
+      next: ({ catalog, questions }) => {
+        this.catalog.set(catalog);
+        this.questions.set(questions);
+        this.loading.set(false);
+      },
+      error: () => { this.loading.set(false); this.loadError.set(true); },
     });
   }
 
-  clearFilters() { this.search.set(''); this.selectedArea.set(''); this.selectedDifficulty.set(''); this.page.set(1); }
+  setArea(code: AreaCode | '') { this.areaCode.set(code); this.subjectId.set(0); this.topicId.set(0); this.page.set(1); }
+  setSubject(id: number) { this.subjectId.set(id); this.topicId.set(0); this.page.set(1); }
+  setTopic(id: number) { this.topicId.set(id); this.page.set(1); }
+  setYear(year: number) { this.year.set(year); this.page.set(1); }
+  setSearch(text: string) { this.search.set(text); this.page.set(1); }
+
+  clearFilters() {
+    this.search.set(''); this.areaCode.set(''); this.subjectId.set(0); this.topicId.set(0); this.year.set(0); this.page.set(1);
+  }
   prevPage() { this.page.update(p => p - 1); }
   nextPage() { this.page.update(p => p + 1); }
 
-  toggleExpand(id: number) {
-    this.expanded.update(set => {
-      const next = new Set(set);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  isExpanded(id: number) { return this.expanded().has(id); }
+  isRevealed(id: number) { return this.revealed().has(id); }
+  toggleExpand(id: number) { this.expanded.update(set => this.toggle(set, id)); }
+  toggleReveal(id: number) { this.revealed.update(set => this.toggle(set, id)); }
+
+  private toggle(set: Set<number>, id: number) {
+    const next = new Set(set);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
   }
 
-  optionsList(q: QuestionDto) {
-    return [
-      { key: 'A', text: q.optionA },
-      { key: 'B', text: q.optionB },
-      { key: 'C', text: q.optionC },
-      { key: 'D', text: q.optionD },
-      { key: 'E', text: q.optionE },
-    ];
+  private normalize(text: string) {
+    return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   }
 
-  areaColor(name: string) { return getAreaByName(name)?.color ?? '#888'; }
-  areaSoft(name: string) { return getAreaByName(name)?.soft ?? '#F5F6FA'; }
-  areaShort(name: string) { return getAreaByName(name)?.short ?? name; }
+  readonly areaColor = areaColor;
+  readonly areaSoft = areaSoft;
+  readonly areaShort = areaShort;
 
-  diffBg(d: string) { return d === 'fácil' ? '#DCF5EB' : d === 'difícil' ? '#FEE2E2' : '#FEF3E2'; }
-  diffColor(d: string) { return d === 'fácil' ? '#059669' : d === 'difícil' ? '#C73A1E' : '#B8841C'; }
+  /** Dificuldade TRI na escala do ENEM: até 600 fácil, até 750 média, acima difícil. */
+  diffBg(b: number) { return b < 600 ? '#DCF5EB' : b < 750 ? '#FEF3E2' : '#FEE2E2'; }
+  diffColor(b: number) { return b < 600 ? '#059669' : b < 750 ? '#B8841C' : '#C73A1E'; }
 }

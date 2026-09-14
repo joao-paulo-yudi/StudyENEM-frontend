@@ -1,102 +1,157 @@
-import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService, SubmitAttemptDto } from '../../core/api.service';
-import { StudentService } from '../../core/student.service';
+import { ApiService } from '../../core/api.service';
 import { ExamStateService } from '../../core/exam-state.service';
-import { getAreaByName } from '../../core/areas.config';
+import { areaColor, areaShort, areaSoft } from '../../core/areas.config';
+import { formatClock, formatDuration } from '../../core/format';
+import { MarkdownPipe } from '../../shared/markdown/markdown.pipe';
 
 @Component({
   selector: 'app-simulado-run',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MarkdownPipe],
   templateUrl: './simulado-run.component.html',
   styleUrl: './simulado-run.component.css',
 })
 export class SimuladoRunComponent implements OnInit, OnDestroy {
   private api = inject(ApiService);
   private router = inject(Router);
-  private student = inject(StudentService);
-  examState = inject(ExamStateService);
+  private examState = inject(ExamStateService);
 
-  questions = this.examState.questions;
-  answers = this.examState.answers;
-  config = this.examState.config;
+  readonly questions = this.examState.questions;
+  readonly answers = this.examState.answers;
+  readonly config = this.examState.config;
+  readonly timeLimit = this.examState.timeLimitSeconds;
 
   current = signal(0);
-  submitting = signal(false);
-  showQuitModal = signal(false);
   elapsed = signal(0);
+  submitting = signal(false);
+  submitError = signal('');
+  showQuitModal = signal(false);
+  showSubmitModal = signal(false);
+  alertDismissed = signal(false);
+  timeUp = signal(false);
 
-  private timerInterval: any;
-  private startTime = Date.now();
-
-  readonly options = [
-    { key: 'A', field: 'optionA' as const },
-    { key: 'B', field: 'optionB' as const },
-    { key: 'C', field: 'optionC' as const },
-    { key: 'D', field: 'optionD' as const },
-    { key: 'E', field: 'optionE' as const },
-  ];
+  private timer?: ReturnType<typeof setInterval>;
+  private shownAt = Date.now();
 
   total = computed(() => this.questions().length);
-  currentQ = computed(() => this.questions()[this.current()]);
+  currentQ = computed(() => this.questions()[this.current()] ?? null);
   answeredCount = computed(() => Object.keys(this.answers()).length);
-  progressPct = computed(() => this.total() > 0 ? (this.answeredCount() / this.total()) * 100 : 0);
-  timerDisplay = computed(() => {
-    const s = this.elapsed();
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-    return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+  blankCount = computed(() => this.total() - this.answeredCount());
+  progressPct = computed(() => (this.total() > 0 ? (this.answeredCount() / this.total()) * 100 : 0));
+
+  timed = computed(() => this.timeLimit() != null);
+  remaining = computed(() => {
+    const limit = this.timeLimit();
+    return limit == null ? null : Math.max(0, limit - this.elapsed());
   });
-  areaShort = computed(() => {
-    const name = this.config()?.areaName;
-    return name ? (getAreaByName(name)?.short ?? name) : '';
+  /** RF10: alerta nos 5 minutos finais (ou nos últimos 20% do tempo em simulados curtos). */
+  nearLimit = computed(() => {
+    const limit = this.timeLimit();
+    const remaining = this.remaining();
+    return limit != null && remaining != null && remaining <= Math.min(300, Math.round(limit * 0.2));
+  });
+  clock = computed(() => formatClock(this.remaining() ?? this.elapsed()));
+
+  modeLabel = computed(() => {
+    const c = this.config();
+    if (!c) return '';
+    if (c.topicName) return `Treino · ${c.topicName}`;
+    if (c.mode === 'foco') return `Foco · ${areaShort(c.areaCode)}`;
+    return this.total() === 180 ? 'Prova completa' : 'Simulado Geral';
   });
 
   ngOnInit() {
-    if (!this.student.name || !this.questions().length) {
+    if (!this.questions().length) {
       this.router.navigate(['/simulado']);
       return;
     }
-    if (this.config()?.timed) {
-      this.timerInterval = setInterval(() => this.elapsed.update(e => e + 1), 1000);
+    this.shownAt = Date.now();
+    this.timer = setInterval(() => this.tick(), 1000);
+  }
+
+  ngOnDestroy() { this.stopTimer(); }
+
+  private tick() {
+    this.elapsed.update(e => e + 1);
+    if (this.remaining() === 0 && !this.submitting()) {
+      this.timeUp.set(true);
+      this.submit();
     }
   }
 
-  ngOnDestroy() { if (this.timerInterval) clearInterval(this.timerInterval); }
+  private stopTimer() {
+    if (this.timer) clearInterval(this.timer);
+    this.timer = undefined;
+  }
 
-  select(opt: string) { this.examState.setAnswer(this.current(), opt); }
-  prev() { if (this.current() > 0) this.current.update(c => c - 1); }
-  next() { if (this.current() < this.total() - 1) this.current.update(c => c + 1); }
-  goTo(idx: number) { this.current.set(idx); }
-  confirmQuit() { this.showQuitModal.set(true); }
-  quit() { this.examState.reset(); this.router.navigate(['/home']); }
+  /** Soma à questão atual o tempo desde que ela foi exibida (métrica de tempo médio por questão). */
+  private recordTime() {
+    const now = Date.now();
+    const seconds = Math.round((now - this.shownAt) / 1000);
+    if (seconds > 0) this.examState.addTime(this.current(), seconds);
+    this.shownAt = now;
+  }
 
-  areaSoft(name: string) { return getAreaByName(name)?.soft ?? '#F5F6FA'; }
-  areaColor(name: string) { return getAreaByName(name)?.color ?? '#888'; }
-  areaShortByName(name: string) { return getAreaByName(name)?.short ?? name; }
+  goTo(index: number) {
+    if (index === this.current() || index < 0 || index >= this.total()) return;
+    this.recordTime();
+    this.current.set(index);
+  }
+  prev() { this.goTo(this.current() - 1); }
+  next() { this.goTo(this.current() + 1); }
+
+  /** Clicar de novo na alternativa marcada deixa a questão em branco. */
+  select(letter: string) {
+    const index = this.current();
+    if (this.answers()[index] === letter) this.examState.clearAnswer(index);
+    else this.examState.setAnswer(index, letter);
+  }
+
+  requestSubmit() {
+    if (this.blankCount() > 0) this.showSubmitModal.set(true);
+    else this.submit();
+  }
 
   submit() {
     if (this.submitting()) return;
     this.submitting.set(true);
-    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.submitError.set('');
+    this.showSubmitModal.set(false);
+    this.recordTime();
+    this.stopTimer();
 
-    const dto: SubmitAttemptDto = {
-      attemptId: this.examState.attemptId(),
-      timeTakenSeconds: this.config()?.timed ? this.elapsed() : undefined,
-      answers: this.questions().map((q, idx) => ({
+    const answers = this.answers();
+    const times = this.examState.timeSpent();
+    this.api.submitAttempt(this.examState.attemptId(), {
+      timeTakenSeconds: this.elapsed(),
+      answers: this.questions().map((q, i) => ({
         questionId: q.id,
-        selectedOption: this.answers()[idx] ?? 'A',
+        selectedOption: answers[i] ?? null,
+        timeSpentSeconds: times[i] ?? 0,
       })),
-    };
-
-    this.api.submitAttempt(dto).subscribe({
+    }).subscribe({
       next: result => {
         this.examState.reset();
         this.router.navigate(['/resultado', result.attemptId]);
       },
-      error: () => { this.submitting.set(false); },
+      error: err => {
+        this.submitting.set(false);
+        this.submitError.set(err?.error?.message ?? 'Não foi possível enviar o simulado. Verifique a conexão e tente novamente.');
+      },
     });
   }
+
+  quit() {
+    this.stopTimer();
+    this.examState.reset();
+    this.router.navigate(['/home']);
+  }
+
+  readonly areaColor = areaColor;
+  readonly areaSoft = areaSoft;
+  readonly areaShort = areaShort;
+  readonly duration = formatDuration;
 }

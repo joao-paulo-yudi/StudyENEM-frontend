@@ -120,6 +120,14 @@ input:focus, select:focus { border-color: var(--orange); }
 }
 .data-table td { padding: 14px 8px; color: var(--sub); border-bottom: 1px solid #F4F5F9; }
 
+/* ── Enunciados em Markdown (conteúdo inserido via [innerHTML]) ── */
+.md p { margin: 0 0 12px; }
+.md p:last-child { margin-bottom: 0; }
+.md .md-heading { margin-top: 4px; }
+.md strong { font-weight: 600; }
+.md-img { max-width: 100%; height: auto; vertical-align: middle; border-radius: 4px; }
+.opt-text .md-img, .q-option-text .md-img { max-height: 220px; }
+
 /* ── Login ────────────────────────────────────────────────── */
 .login-wrap { display: flex; min-height: 100vh; background: var(--bg); }
 .login-brand {

@@ -1,15 +1,14 @@
 <div class="page page-narrow">
   <header class="cfg-head">
     <h1 class="cfg-title">Novo Simulado</h1>
-    <p class="cfg-subtitle">Configure seu simulado para uma prática mais eficiente</p>
+    <p class="cfg-subtitle">Questões oficiais do ENEM. Os resultados alimentam seu plano de estudos automaticamente.</p>
   </header>
 
-  <!-- Mode -->
+  <!-- Modo -->
   <div class="card cfg-section">
     <h3 class="section-label">Modo</h3>
     <div class="mode-grid">
-      <button (click)="setMode('geral')" class="select-card"
-        [class.select-card-active]="mode()==='geral'">
+      <button (click)="setMode('geral')" class="select-card" [class.select-card-active]="mode() === 'geral'">
         <div class="mode-card-inner">
           <div class="mode-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F26B3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -18,12 +17,11 @@
           </div>
           <div>
             <div class="mode-name">Simulado Geral</div>
-            <div class="mode-desc">Questões de todas as áreas</div>
+            <div class="mode-desc">Todas as áreas, no formato do ENEM</div>
           </div>
         </div>
       </button>
-      <button (click)="setMode('foco')" class="select-card"
-        [class.select-card-active]="mode()==='foco'">
+      <button (click)="setMode('foco')" class="select-card" [class.select-card-active]="mode() === 'foco'">
         <div class="mode-card-inner">
           <div class="mode-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F26B3A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -32,88 +30,119 @@
           </div>
           <div>
             <div class="mode-name">Foco por Área</div>
-            <div class="mode-desc">Pratique uma área específica</div>
+            <div class="mode-desc">Pratique uma área ou um conteúdo</div>
           </div>
         </div>
       </button>
     </div>
   </div>
 
-  <!-- Area (only for foco) -->
   @if (mode() === 'foco') {
     <div class="card cfg-section">
-      <h3 class="section-label">Área de conhecimento</h3>
-      <div class="area-grid">
-        @for (a of areas; track a.id) {
-          <button (click)="setArea(a.id)" class="area-card"
-            [style.border]="selectedArea() === a.id ? '2px solid ' + a.color : '2px solid #ECEEF3'"
-            [style.background]="selectedArea() === a.id ? a.soft : '#fff'">
-            <span class="area-dot" [style.background]="a.color"></span>
-            <span class="area-name" [style.color]="selectedArea() === a.id ? a.color : '#0F1B3D'">{{a.short}}</span>
-          </button>
-        }
-      </div>
+      @if (topic(); as t) {
+        <h3 class="section-label">Conteúdo do plano de estudos</h3>
+        <div class="topic-banner">
+          <div>
+            <div class="topic-banner-name">{{ t.name }}</div>
+            <div class="topic-banner-desc">Treino com as questões desse conteúdo</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" (click)="clearTopic()">Escolher área</button>
+        </div>
+      } @else {
+        <h3 class="section-label">Área de conhecimento</h3>
+        <div class="area-grid">
+          @for (a of areas; track a.code) {
+            <button (click)="setArea(a.code)" class="area-card"
+              [style.border]="areaCode() === a.code ? '2px solid ' + a.color : '2px solid #ECEEF3'"
+              [style.background]="areaCode() === a.code ? a.soft : '#fff'">
+              <span class="area-dot" [style.background]="a.color"></span>
+              <span class="area-name" [style.color]="areaCode() === a.code ? a.color : '#0F1B3D'">{{ a.short }}</span>
+            </button>
+          }
+        </div>
+      }
     </div>
   }
 
-  <!-- Quantity -->
+  <!-- Quantidade -->
   <div class="card cfg-section">
     <h3 class="section-label">Quantidade de questões</h3>
     <div class="count-grid">
-      @for (opt of countOptions; track opt.value) {
-        <button (click)="setCount(opt.value)" class="select-card count-card"
-          [class.select-card-active]="count() === opt.value">
-          <div class="count-num" [style.color]="count() === opt.value ? '#F26B3A' : '#0F1B3D'">{{opt.value}}</div>
-          <div class="count-min" [style.color]="count() === opt.value ? '#F26B3A' : '#7B8597'">~{{opt.min}}min</div>
+      @for (n of countOptions(); track n) {
+        <button (click)="count.set(n)" class="select-card count-card" [class.select-card-active]="count() === n">
+          <div class="count-num" [style.color]="count() === n ? '#F26B3A' : '#0F1B3D'">{{ n }}</div>
+          <div class="count-min" [style.color]="count() === n ? '#F26B3A' : '#7B8597'">{{ countHint(n) }}</div>
         </button>
       }
     </div>
+    @if (topic()) {
+      <p class="cfg-hint">Se o conteúdo tiver menos questões, o simulado usa todas as disponíveis.</p>
+    }
   </div>
 
-  <!-- Timer -->
+  <!-- Língua estrangeira -->
+  @if (showLanguage()) {
+    <div class="card cfg-section">
+      <h3 class="section-label">Língua estrangeira</h3>
+      <div class="lang-grid">
+        @for (l of languages; track l.id) {
+          <button class="filter-chip" [class.filter-chip-active]="language() === l.id" (click)="language.set(l.id)">{{ l.label }}</button>
+        }
+      </div>
+      <p class="cfg-hint">Como no ENEM, as questões 1 a 5 de Linguagens são da língua escolhida.</p>
+    </div>
+  }
+
+  <!-- Cronômetro -->
   <div class="card cfg-section-lg">
     <div class="timer-row">
       <div>
-        <div class="timer-title">Cronômetro</div>
-        <div class="timer-desc">Mede o tempo total do simulado</div>
+        <div class="timer-title">Cronômetro com tempo limite</div>
+        <div class="timer-desc">3 minutos por questão ({{ timeLimit() }}), com alerta quando o tempo estiver acabando</div>
       </div>
-      <button (click)="toggleTimer()" class="toggle" [class.toggle-on]="timer()">
+      <button (click)="timer.set(!timer())" class="toggle" [class.toggle-on]="timer()" [attr.aria-pressed]="timer()" aria-label="Cronômetro">
         <span class="toggle-knob" [class.toggle-knob-on]="timer()"></span>
       </button>
     </div>
   </div>
 
-  <!-- Summary bar -->
+  <!-- Resumo -->
   <div class="card summary-bar">
     <div class="summary-stats">
       <div>
         <div class="summary-label">Modo</div>
-        <div class="summary-value">{{mode() === 'foco' ? 'Foco' : 'Geral'}}</div>
+        <div class="summary-value">{{ topic() ? 'Treino' : mode() === 'foco' ? 'Foco' : 'Geral' }}</div>
       </div>
-      @if (mode() === 'foco' && selectedArea()) {
+      @if (topic(); as t) {
+        <div>
+          <div class="summary-label">Conteúdo</div>
+          <div class="summary-value summary-ellipsis">{{ t.name }}</div>
+        </div>
+      } @else if (mode() === 'foco' && areaConfig()) {
         <div>
           <div class="summary-label">Área</div>
-          <div class="summary-value" [style.color]="areaConfig()?.color ?? '#fff'">{{areaConfig()?.short}}</div>
+          <div class="summary-value" [style.color]="areaConfig()!.color">{{ areaConfig()!.short }}</div>
         </div>
       }
       <div>
         <div class="summary-label">Questões</div>
-        <div class="summary-value">{{count()}}</div>
+        <div class="summary-value">{{ count() }}</div>
       </div>
       <div>
-        <div class="summary-label">Tempo est.</div>
-        <div class="summary-value">~{{estimatedMin()}}min</div>
+        <div class="summary-label">Tempo limite</div>
+        <div class="summary-value">{{ timer() ? timeLimit() : 'livre' }}</div>
       </div>
     </div>
     <button class="btn btn-primary btn-lg summary-start" [disabled]="!canStart()" (click)="start()">
       @if (loading()) { Carregando... }
-      @else { Começar simulado
+      @else {
+        Começar simulado
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12H19M13 6l6 6-6 6"/></svg>
       }
     </button>
   </div>
 
   @if (error()) {
-    <div class="cfg-error">{{error()}}</div>
+    <div class="cfg-error">{{ error() }}</div>
   }
 </div>

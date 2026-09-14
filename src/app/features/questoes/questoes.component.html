@@ -2,11 +2,11 @@
   <header class="q-head">
     <div>
       <h1 class="q-title">Banco de Questões</h1>
-      <p class="q-subtitle">Explore e filtre questões por área, assunto e dificuldade</p>
+      <p class="q-subtitle">Questões oficiais do ENEM organizadas por área, disciplina, conteúdo e ano de aplicação</p>
     </div>
   </header>
 
-  <!-- Filters -->
+  <!-- Filtros -->
   <div class="card filters">
     <div class="filter-search">
       <label class="filter-label">Buscar</label>
@@ -14,97 +14,124 @@
         <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9AA3B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <input class="search-input" [ngModel]="search()" (ngModelChange)="search.set($event); page.set(1)" placeholder="Buscar por conteúdo..."/>
+        <input class="search-input" [ngModel]="search()" (ngModelChange)="setSearch($event)" placeholder="Texto, conteúdo ou número..."/>
       </div>
     </div>
     <div class="filter-field">
       <label class="filter-label">Área</label>
-      <select class="filter-select" [ngModel]="selectedArea()" (ngModelChange)="selectedArea.set($event); page.set(1)">
+      <select class="filter-select" [ngModel]="areaCode()" (ngModelChange)="setArea($event)">
         <option value="">Todas as áreas</option>
-        @for (a of areas; track a.id) {
-          <option [value]="a.name">{{a.short}}</option>
+        @for (a of areas; track a.code) {
+          <option [value]="a.code">{{ a.short }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-field">
+      <label class="filter-label">Disciplina</label>
+      <select class="filter-select" [ngModel]="subjectId()" (ngModelChange)="setSubject($event)" [disabled]="!areaCode()">
+        <option [ngValue]="0">Todas</option>
+        @for (s of subjects(); track s.id) {
+          <option [ngValue]="s.id">{{ s.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-field">
+      <label class="filter-label">Conteúdo</label>
+      <select class="filter-select" [ngModel]="topicId()" (ngModelChange)="setTopic($event)" [disabled]="!subjectId()">
+        <option [ngValue]="0">Todos</option>
+        @for (t of topics(); track t.id) {
+          <option [ngValue]="t.id">{{ t.name }} ({{ t.questionCount }})</option>
         }
       </select>
     </div>
     <div class="filter-field filter-field-sm">
-      <label class="filter-label">Dificuldade</label>
-      <select class="filter-select" [ngModel]="selectedDifficulty()" (ngModelChange)="selectedDifficulty.set($event); page.set(1)">
-        <option value="">Todas</option>
-        <option value="fácil">Fácil</option>
-        <option value="média">Média</option>
-        <option value="difícil">Difícil</option>
+      <label class="filter-label">Ano</label>
+      <select class="filter-select" [ngModel]="year()" (ngModelChange)="setYear($event)">
+        <option [ngValue]="0">Todos</option>
+        @for (y of catalog()?.years ?? []; track y) {
+          <option [ngValue]="y">{{ y }}</option>
+        }
       </select>
     </div>
     <button class="btn btn-secondary btn-md" (click)="clearFilters()">Limpar</button>
   </div>
 
-  <!-- Results count -->
   <div class="results-count">
     @if (loading()) { Carregando questões... }
-    @else { <strong>{{filtered().length}}</strong> questões encontradas }
+    @else if (loadError()) { Não foi possível carregar o banco de questões. }
+    @else { <strong>{{ filtered().length }}</strong> questões encontradas }
   </div>
 
-  @if (loading()) {
-    <div class="loading">Carregando...</div>
-  }
-
-  <!-- Questions list -->
-  @if (!loading()) {
+  @if (!loading() && !loadError()) {
     <div class="q-list">
       @for (q of paginated(); track q.id) {
         <div class="card q-item">
           <div class="q-item-row">
-            <div class="q-accent" [style.background]="areaColor(q.area)"></div>
+            <div class="q-accent" [style.background]="areaColor(q.areaCode)"></div>
             <div class="q-content">
-              <!-- Header -->
               <div class="q-tags">
-                <span class="q-id">Q.{{q.id}}</span>
+                <span class="q-id">ENEM {{ q.year }} · Q{{ q.number }}</span>
                 <span class="q-sep"></span>
-                <span class="q-tag" [style.background]="areaSoft(q.area)" [style.color]="areaColor(q.area)">
-                  {{areaShort(q.area)}}
-                </span>
-                <span class="q-tag q-tag-muted">{{q.subject}}</span>
-                @if (q.topic) {
-                  <span class="q-tag q-tag-muted">{{q.topic}}</span>
+                <span class="q-tag" [style.background]="areaSoft(q.areaCode)" [style.color]="areaColor(q.areaCode)">{{ areaShort(q.areaCode) }}</span>
+                @if (q.subject !== areaShort(q.areaCode)) {
+                  <span class="q-tag q-tag-muted">{{ q.subject }}</span>
                 }
-                <span class="q-tag q-diff" [style.background]="diffBg(q.difficulty)" [style.color]="diffColor(q.difficulty)">
-                  {{q.difficulty}}
-                </span>
+                <span class="q-tag q-tag-muted">{{ q.topic }}</span>
+                @if (q.foreignLanguage) {
+                  <span class="q-tag q-tag-muted">{{ q.foreignLanguage === 'ingles' ? 'Inglês' : 'Espanhol' }}</span>
+                }
+                <span class="q-tag q-tag-muted" [title]="q.skillDescription">H{{ q.skill }}</span>
+                @if (!q.correctOption) {
+                  <span class="q-tag q-diff q-tag-danger" [title]="q.triExclusionReason ?? ''">Anulada</span>
+                } @else if (q.triDifficulty != null) {
+                  <span class="q-tag q-diff" [style.background]="diffBg(q.triDifficulty)" [style.color]="diffColor(q.triDifficulty)"
+                        title="Parâmetro de dificuldade (b) publicado pelo INEP, convertido para a escala do ENEM">
+                    Dificuldade TRI {{ q.triDifficulty }}
+                  </span>
+                } @else {
+                  <span class="q-tag q-diff q-tag-muted" [title]="q.triExclusionReason ?? ''">Fora do cálculo TRI</span>
+                }
               </div>
 
-              <!-- Statement (collapsed/expanded) -->
-              <p class="q-statement" [class.q-statement-clamped]="!expanded().has(q.id)">
-                {{q.statement}}
-              </p>
+              <div class="q-statement md" [class.q-statement-clamped]="!isExpanded(q.id)" [innerHTML]="q.statement | markdown"></div>
 
-              <!-- Options (only when expanded) -->
-              @if (expanded().has(q.id)) {
+              @if (isExpanded(q.id)) {
                 <div class="q-options">
-                  @for (opt of optionsList(q); track opt.key) {
-                    <div class="q-option">
-                      <span class="q-option-key">{{opt.key}}</span>
-                      <span class="q-option-text">{{opt.text}}</span>
+                  @for (alt of q.alternatives; track alt.letter) {
+                    <div class="q-option" [class.q-option-correct]="isRevealed(q.id) && alt.letter === q.correctOption">
+                      <span class="q-option-key">{{ alt.letter }}</span>
+                      <span class="q-option-text md" [innerHTML]="alt.text | markdown"></span>
                     </div>
                   }
                 </div>
+                <div class="q-meta-line"><strong>H{{ q.skill }}</strong> · {{ q.skillDescription }}</div>
+                @if (q.triExclusionReason) {
+                  <div class="q-meta-line q-meta-warn">{{ q.triExclusionReason }}</div>
+                }
               }
 
-              <!-- Toggle -->
-              <button class="q-toggle" (click)="toggleExpand(q.id)">
-                @if (expanded().has(q.id)) {
-                  Recolher
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
-                } @else {
-                  Ver questão completa
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              <div class="q-actions">
+                <button class="q-toggle" (click)="toggleExpand(q.id)">
+                  @if (isExpanded(q.id)) {
+                    Recolher
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                  } @else {
+                    Ver questão completa
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  }
+                </button>
+                @if (isExpanded(q.id) && q.correctOption) {
+                  <button class="q-toggle q-toggle-muted" (click)="toggleReveal(q.id)">
+                    {{ isRevealed(q.id) ? 'Ocultar gabarito' : 'Mostrar gabarito' }}
+                  </button>
                 }
-              </button>
+              </div>
             </div>
           </div>
         </div>
       }
 
-      @if (filtered().length === 0 && !loading()) {
+      @if (filtered().length === 0) {
         <div class="card q-empty">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ECEEF3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="q-empty-icon">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -115,17 +142,16 @@
       }
     </div>
 
-    <!-- Pagination -->
     @if (totalPages() > 1) {
       <div class="pagination">
-        <button class="btn btn-secondary btn-md" [disabled]="page() === 1" (click)="prevPage()">
-          ← Anterior
-        </button>
-        <span class="pagination-info">{{page()}} de {{totalPages()}}</span>
-        <button class="btn btn-secondary btn-md" [disabled]="page() === totalPages()" (click)="nextPage()">
-          Próxima →
-        </button>
+        <button class="btn btn-secondary btn-md" [disabled]="page() === 1" (click)="prevPage()">← Anterior</button>
+        <span class="pagination-info">{{ page() }} de {{ totalPages() }}</span>
+        <button class="btn btn-secondary btn-md" [disabled]="page() === totalPages()" (click)="nextPage()">Próxima →</button>
       </div>
     }
+
+    <p class="q-source">
+      Fonte: INEP — ENEM 2022 (1ª aplicação, caderno azul). Gabaritos, habilidades e parâmetros TRI dos microdados oficiais.
+    </p>
   }
 </div>

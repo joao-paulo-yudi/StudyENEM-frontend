@@ -38,7 +38,20 @@
 .area-name { font-size: 14px; font-weight: 500; }
 
 /* Count cards */
-.count-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.count-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
+.cfg-hint { font-size: 12px; color: var(--muted); margin-top: 12px; }
+
+/* Língua estrangeira */
+.lang-grid { display: flex; gap: 8px; }
+
+/* Conteúdo do plano */
+.topic-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; border-radius: 12px; border: 2px solid var(--orange); background: #FFF5F0;
+}
+.topic-banner-name { font-size: 15px; font-weight: 600; color: var(--navy); }
+.topic-banner-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.summary-ellipsis { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .count-card { padding: 14px 10px; text-align: center; }
 .count-num { font-size: 20px; font-weight: 700; }
 .count-min { font-size: 11px; margin-top: 4px; }
@@ -69,7 +82,8 @@
 
 @media (max-width: 560px) {
   .mode-grid, .area-grid { grid-template-columns: 1fr; }
-  .count-grid { grid-template-columns: repeat(2, 1fr); }
+  .count-grid { grid-template-columns: repeat(3, 1fr); }
   .summary-bar { flex-direction: column; align-items: stretch; }
+  .summary-stats { flex-wrap: wrap; gap: 16px; }
   .summary-start { width: 100%; }
 }

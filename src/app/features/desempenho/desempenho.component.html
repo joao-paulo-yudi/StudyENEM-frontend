@@ -4,7 +4,9 @@
     <p class="dsp-subtitle">Análise detalhada da sua evolução nos estudos</p>
   </header>
 
-  @if (!data()) {
+  @if (loadError()) {
+    <div class="loading">Não foi possível carregar seus dados.</div>
+  } @else if (!data()) {
     <div class="loading">Carregando...</div>
   }
 
@@ -13,34 +15,31 @@
     <div class="grid-4 kpi-row">
       <div class="card stat-card">
         <div class="stat-label">Simulados</div>
-        <div class="stat-value">{{d.totalAttempts}}</div>
-        <div class="stat-sub">total realizados</div>
-      </div>
-      <div class="card stat-card">
-        <div class="stat-label">Questões</div>
-        <div class="stat-value">{{d.totalQuestions}}</div>
-        <div class="stat-sub">{{d.totalCorrect}} acertos</div>
+        <div class="stat-value">{{ d.totalAttempts }}</div>
+        <div class="stat-sub">{{ d.totalQuestions }} questões · {{ d.totalCorrect }} acertos</div>
       </div>
       <div class="card stat-card">
         <div class="stat-label">Aproveitamento</div>
-        <div class="stat-value" [style.color]="overallPct(d) >= 60 ? '#059669' : overallPct(d) >= 40 ? '#B8841C' : '#C73A1E'">
-          {{overallPct(d)}}%
-        </div>
-        <div class="stat-sub">média geral</div>
+        <div class="stat-value" [style.color]="scoreColor(overallPct())">{{ overallPct() }}%</div>
+        <div class="stat-sub">média geral de acertos</div>
       </div>
       <div class="card stat-card">
-        <div class="stat-label">Horas estudadas</div>
-        <div class="stat-value">{{studyHours(d)}}h</div>
-        <div class="stat-sub">tempo total</div>
+        <div class="stat-label">Nota TRI estimada</div>
+        <div class="stat-value">{{ d.triAverage != null ? fmt(d.triAverage) : '–' }}</div>
+        <div class="stat-sub">média das áreas · escala do ENEM</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Tempo médio</div>
+        <div class="stat-value">{{ duration(d.averageTimePerQuestion) }}</div>
+        <div class="stat-sub">por questão · {{ duration(d.totalTimeSeconds) }} no total</div>
       </div>
     </div>
 
     <div class="grid-2 chart-row">
-      <!-- Evolution chart -->
       <div class="card">
         <div class="panel-head">
           <h3 class="panel-title">Evolução do aproveitamento</h3>
-          <div class="panel-sub">Últimos {{evoAttempts().length}} simulados</div>
+          <div class="panel-sub">Últimos {{ evoAttempts().length }} simulados</div>
         </div>
         @if (evoAttempts().length >= 2) {
           <div class="chart-box">
@@ -51,11 +50,10 @@
         }
       </div>
 
-      <!-- Radar chart -->
       <div class="card">
         <div class="panel-head">
           <h3 class="panel-title">Radar por área</h3>
-          <div class="panel-sub">Desempenho comparativo</div>
+          <div class="panel-sub">Aproveitamento comparativo</div>
         </div>
         @if (d.byArea.length > 0) {
           <div class="chart-box chart-box-radar">
@@ -67,67 +65,142 @@
       </div>
     </div>
 
-    <!-- By area table -->
+    <!-- Evolução por área -->
+    <div class="card area-section">
+      <div class="panel-head panel-head-row">
+        <div>
+          <h3 class="panel-title">Evolução por área</h3>
+          <div class="panel-sub">Comparação entre simulados consecutivos</div>
+        </div>
+        <div class="metric-toggle">
+          <button class="filter-chip" [class.filter-chip-active]="areaMetric() === 'percentage'" (click)="areaMetric.set('percentage')">Acertos (%)</button>
+          <button class="filter-chip" [class.filter-chip-active]="areaMetric() === 'tri'" (click)="areaMetric.set('tri')">Nota TRI</button>
+        </div>
+      </div>
+      @if (evoAttempts().length >= 2) {
+        <div class="chart-box chart-box-tall">
+          <app-chart type="line" [data]="areaEvoChart().data" [options]="areaEvoChart().options" />
+        </div>
+      } @else {
+        <div class="chart-empty">Faça mais simulados para comparar as áreas</div>
+      }
+    </div>
+
+    <!-- Desempenho por área -->
     <div class="card area-section">
       <div class="panel-head">
         <h3 class="panel-title">Desempenho por área</h3>
+        <div class="panel-sub">Taxa de acerto, nota estimada pela TRI e tempo médio por questão</div>
       </div>
       @if (d.byArea.length === 0) {
         <div class="chart-empty chart-empty-sm">Faça simulados para ver dados por área</div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th>Área</th><th>Acertos</th><th>Aproveitamento</th><th>Nota TRI</th><th>Tempo médio</th></tr>
+            </thead>
+            <tbody>
+              @for (a of d.byArea; track a.areaCode) {
+                <tr>
+                  <td>
+                    <span class="area-cell"><span class="dot" [style.background]="areaColor(a.areaCode)"></span>{{ areaShort(a.areaCode) }}</span>
+                  </td>
+                  <td>{{ a.correct }}/{{ a.total }}</td>
+                  <td class="td-bar">
+                    <span class="td-pct" [style.color]="scoreColor(a.percentage)">{{ fmt(a.percentage) }}%</span>
+                    <div class="bar-track bar-track-sm">
+                      <div class="bar-fill" [style.width.%]="a.percentage" [style.background]="areaColor(a.areaCode)"></div>
+                    </div>
+                  </td>
+                  <td>
+                    @if (a.tri) {
+                      <span class="tri-score">{{ fmt(a.tri.score) }}</span>
+                      <span class="td-muted"> ± {{ fmt(a.tri.standardError) }}</span>
+                    } @else { <span class="td-muted">–</span> }
+                  </td>
+                  <td class="td-muted">{{ duration(a.averageTimeSeconds) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="note">
+          A nota TRI é estimada como no ENEM: modelo logístico de 3 parâmetros com os parâmetros oficiais
+          dos itens publicados pelo INEP e estimador EAP, convertida para a escala de notas do exame.
+          Considera a resposta mais recente de cada questão; com poucas questões a estimativa é menos
+          precisa (± erro-padrão).
+        </p>
       }
-      <div class="bar-list">
-        @for (a of sortedByArea(d); track a.area) {
-          <div>
-            <div class="bar-head">
-              <div class="bar-label">
-                <span class="dot" [style.background]="areaColor(a.area)"></span>
-                <span class="bar-name">{{areaShort(a.area)}}</span>
-              </div>
-              <div class="bar-meta">
-                <span class="bar-pct" [style.color]="a.pct >= 60 ? '#059669' : a.pct >= 40 ? '#B8841C' : '#C73A1E'">{{a.pct}}%</span>
-                <span class="bar-frac">{{a.correct}}/{{a.total}} acertos</span>
-              </div>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill" [style.width.%]="a.pct" [style.background]="areaColor(a.area)"></div>
-            </div>
-          </div>
-        }
-      </div>
     </div>
 
-    <!-- History table -->
+    <!-- Desempenho por conteúdo -->
+    <div class="card area-section">
+      <div class="panel-head">
+        <h3 class="panel-title">Desempenho por conteúdo</h3>
+        <div class="panel-sub">Ordenado pelo índice de dificuldade (proporção de erros no seu histórico)</div>
+      </div>
+      @if (d.byTopic.length === 0) {
+        <div class="chart-empty chart-empty-sm">Nenhum conteúdo respondido ainda</div>
+      } @else {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th>Conteúdo</th><th>Área</th><th>Acertos</th><th>Índice de dificuldade</th><th>Tempo médio</th></tr>
+            </thead>
+            <tbody>
+              @for (t of topics(); track t.topicId) {
+                <tr>
+                  <td>
+                    <div class="topic-name">{{ t.topic }}</div>
+                    <div class="td-muted td-small">{{ t.subject }}</div>
+                  </td>
+                  <td><span class="area-cell"><span class="dot" [style.background]="areaColor(t.areaCode)"></span>{{ areaShort(t.areaCode) }}</span></td>
+                  <td>{{ t.correct }}/{{ t.total }}</td>
+                  <td class="td-bar">
+                    <span class="td-pct" [style.color]="indexColor(t.difficultyIndex)">{{ fmt(t.difficultyIndex, 2) }}</span>
+                    <div class="bar-track bar-track-sm">
+                      <div class="bar-fill" [style.width.%]="t.difficultyIndex * 100" [style.background]="indexColor(t.difficultyIndex)"></div>
+                    </div>
+                  </td>
+                  <td class="td-muted">{{ duration(t.averageTimeSeconds) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (d.byTopic.length > 10) {
+          <button class="btn-link show-more" (click)="showAllTopics.set(!showAllTopics())">
+            {{ showAllTopics() ? 'Mostrar menos' : 'Ver todos os ' + d.byTopic.length + ' conteúdos' }}
+          </button>
+        }
+      }
+    </div>
+
+    <!-- Histórico -->
     <div class="card">
       <div class="panel-head">
         <h3 class="panel-title">Histórico de simulados</h3>
+        <div class="panel-sub">Clique em um simulado para ver o resultado detalhado</div>
       </div>
-      @if (d.recentAttempts.length === 0) {
+      @if (d.history.length === 0) {
         <div class="chart-empty chart-empty-sm">Nenhum simulado realizado ainda</div>
       }
       <div class="table-scroll">
         <table class="data-table">
           <thead>
-            <tr>
-              <th>Data</th><th>Modo</th><th>Questões</th><th>Acertos</th><th>Aproveitamento</th><th>Tempo</th>
-            </tr>
+            <tr><th>Data</th><th>Modo</th><th>Questões</th><th>Acertos</th><th>Aproveitamento</th><th>Nota TRI</th><th>Tempo</th></tr>
           </thead>
           <tbody>
-            @for (h of d.recentAttempts; track h.attemptId) {
-              <tr>
-                <td>{{fmtDate(h.date)}}</td>
-                <td>
-                  <span class="mode-pill">
-                    {{h.mode === 'foco' ? 'Foco · ' + areaShort(h.area) : 'Geral'}}
-                  </span>
-                </td>
-                <td>{{h.total}}</td>
-                <td class="td-correct">{{h.correct}}</td>
-                <td>
-                  <span class="td-pct" [style.color]="h.score >= 60 ? '#059669' : h.score >= 40 ? '#B8841C' : '#C73A1E'">
-                    {{h.score | number:'1.0-0'}}%
-                  </span>
-                </td>
-                <td class="td-muted">{{h.timeTakenSeconds ? fmtMin(h.timeTakenSeconds) : '–'}}</td>
+            @for (h of d.history; track h.attemptId) {
+              <tr class="row-link" (click)="openResult(h)">
+                <td>{{ fmtDate(h.date) }}</td>
+                <td><span class="mode-pill">{{ attemptLabel(h) }}</span></td>
+                <td>{{ h.total }}</td>
+                <td class="td-correct">{{ h.correct }}</td>
+                <td><span class="td-pct" [style.color]="scoreColor(h.percentage)">{{ fmt(h.percentage) }}%</span></td>
+                <td>{{ h.triAverage != null ? fmt(h.triAverage) : '–' }}</td>
+                <td class="td-muted">{{ duration(h.timeTakenSeconds) }}</td>
               </tr>
             }
           </tbody>

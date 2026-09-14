@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../core/api.service';
+import { ApiService, AuthResponseDto } from '../../core/api.service';
 import { StudentService } from '../../core/student.service';
 
 @Component({
@@ -58,8 +58,8 @@ export class LoginComponent {
     }
   }
 
-  private onAuth(u: { id: number; name: string; email: string }) {
-    this.student.setUser(u);
+  private onAuth(response: AuthResponseDto) {
+    this.student.setSession(response);
     this.loading.set(false);
     this.router.navigate(['/home']);
   }

@@ -1,196 +1,200 @@
-@if (hasStudent) {
-  <div class="page">
-    <header class="dash-head">
-      <div>
-        <div class="dash-greeting">Bom dia, {{firstName}}</div>
-        <h1 class="dash-title">
-          @if (!data) { Carregando seu desempenho... }
-          @else if (data.totalAttempts === 0) { Faça seu primeiro simulado! }
-          @else { {{data.totalAttempts}} simulado{{data.totalAttempts !== 1 ? 's' : ''}} realizados. Continue evoluindo! }
-        </h1>
-      </div>
-      <button class="btn btn-primary btn-lg" (click)="go('simulado')">
-        Iniciar simulado
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12 H19 M13 6 L19 12 L13 18"/></svg>
-      </button>
-    </header>
+<div class="page">
+  <header class="dash-head">
+    <div>
+      <div class="dash-greeting">Olá, {{ firstName }}</div>
+      <h1 class="dash-title">
+        @if (loadError()) { Não foi possível carregar seu desempenho. }
+        @else if (!data()) { Carregando seu desempenho... }
+        @else if (data()!.totalAttempts === 0) { Faça seu primeiro simulado! }
+        @else if (comparison()) {
+          @if (comparison()!.percentageDelta >= 0) {
+            Você está avançando. +{{ fmt(comparison()!.percentageDelta, 1) }} p.p. desde o último simulado.
+          } @else {
+            {{ fmt(comparison()!.percentageDelta, 1) }} p.p. em relação ao simulado anterior. Vamos recuperar!
+          }
+        }
+        @else { 1 simulado realizado. Continue praticando! }
+      </h1>
+    </div>
+    <button class="btn btn-primary btn-lg" (click)="go('simulado')">
+      Iniciar simulado
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12 H19 M13 6 L19 12 L13 18"/></svg>
+    </button>
+  </header>
 
-    @if (data) {
-      <!-- KPIs -->
-      <div class="grid-4 kpi-row">
-        <div class="card stat-card">
-          <div class="stat-label">Simulados realizados</div>
-          <div class="stat-value">{{data.totalAttempts}}</div>
-          <div class="stat-sub">histórico total</div>
+  @if (data(); as d) {
+    <!-- KPIs -->
+    <div class="grid-4 kpi-row">
+      <div class="card stat-card">
+        <div class="stat-label">Simulados realizados</div>
+        <div class="stat-value">{{ d.totalAttempts }}</div>
+        <div class="stat-sub">{{ d.totalQuestions }} questões respondidas</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Aproveitamento geral</div>
+        <div class="stat-value">{{ overallPct() }}%</div>
+        <div class="stat-sub" [style.color]="scoreColor(overallPct())">{{ d.totalCorrect }} de {{ d.totalQuestions }} questões</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Nota TRI estimada</div>
+        <div class="stat-value">{{ d.triAverage != null ? fmt(d.triAverage) : '–' }}</div>
+        <div class="stat-sub">média das áreas · escala do ENEM</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Horas estudadas</div>
+        <div class="stat-value">{{ studyHours() }}h</div>
+        <div class="stat-sub">
+          {{ d.averageTimePerQuestion != null ? duration(d.averageTimePerQuestion) + ' por questão' : 'tempo total' }}
         </div>
-        <div class="card stat-card">
-          <div class="stat-label">Questões respondidas</div>
-          <div class="stat-value">{{data.totalQuestions}}</div>
-          <div class="stat-sub">{{data.totalCorrect}} acertos</div>
-        </div>
-        <div class="card stat-card">
-          <div class="stat-label">Aproveitamento geral</div>
-          <div class="stat-value">{{overallPct}}%</div>
-          <div class="stat-sub" [style.color]="overallPct >= 60 ? '#059669' : '#C73A1E'">
-            {{data.totalCorrect}} de {{data.totalQuestions}} questões
+      </div>
+    </div>
+
+    <div class="grid-2-1 panel-row">
+      <!-- Evolução -->
+      <div class="card">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">Evolução do desempenho</h3>
+            <div class="panel-sub">Aproveitamento dos últimos simulados</div>
           </div>
         </div>
-        <div class="card stat-card">
-          <div class="stat-label">Horas estudadas</div>
-          <div class="stat-value">{{studyHours}}h</div>
-          <div class="stat-sub">tempo total</div>
-        </div>
-      </div>
-
-      <div class="grid-2-1 panel-row">
-        <!-- Evolução -->
-        <div class="card">
-          <div class="panel-head">
-            <div>
-              <h3 class="panel-title">Evolução do desempenho</h3>
-              <div class="panel-sub">Aproveitamento dos últimos simulados</div>
+        <div class="evo-flex">
+          <div class="ring-wrap">
+            <svg width="130" height="130">
+              <circle cx="65" cy="65" r="54" stroke="#F0F2F7" stroke-width="12" fill="none"/>
+              <circle cx="65" cy="65" r="54" stroke="#F26B3A" stroke-width="12" fill="none"
+                stroke-linecap="round"
+                [attr.stroke-dasharray]="circumference"
+                [attr.stroke-dashoffset]="ringOffset()"
+                transform="rotate(-90 65 65)"
+                class="ring-progress"/>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-pct">{{ overallPct() }}%</div>
+              <div class="ring-frac">{{ d.totalCorrect }}/{{ d.totalQuestions }}</div>
             </div>
           </div>
-          <div class="evo-flex">
-            <div class="ring-wrap">
-              <svg width="130" height="130">
-                <circle cx="65" cy="65" r="54" stroke="#F0F2F7" stroke-width="12" fill="none"/>
-                <circle cx="65" cy="65" r="54" stroke="#F26B3A" stroke-width="12" fill="none"
-                  stroke-linecap="round"
-                  [attr.stroke-dasharray]="circumference"
-                  [attr.stroke-dashoffset]="ringOffset"
-                  transform="rotate(-90 65 65)"
-                  class="ring-progress"/>
-              </svg>
-              <div class="ring-center">
-                <div class="ring-pct">{{overallPct}}%</div>
-                <div class="ring-frac">{{data.totalCorrect}}/{{data.totalQuestions}}</div>
+          <div class="evo-chart">
+            @if (evoAttempts().length >= 2) {
+              <div class="chart-box">
+                <app-chart type="line" [data]="evoChart().data" [options]="evoChart().options" />
               </div>
-            </div>
-            <div class="evo-chart">
-              @if (evoCount >= 2 && evoChartData) {
-                <div class="chart-box">
-                  <app-chart type="line" [data]="evoChartData" [options]="evoChartOptions" />
+            } @else {
+              <div class="empty-note">Faça mais simulados para ver a evolução</div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Desempenho por área -->
+      <div class="card">
+        <div class="panel-head-block">
+          <h3 class="panel-title">Desempenho por área</h3>
+          <div class="panel-sub">Acertos acumulados e nota estimada pela TRI</div>
+        </div>
+        @if (areaPerf().length === 0) {
+          <div class="empty-note empty-note-left">Faça simulados para ver</div>
+        }
+        <div class="bar-list">
+          @for (a of areaPerf(); track a.areaCode) {
+            <div>
+              <div class="bar-head">
+                <div class="bar-label">
+                  <span class="dot" [style.background]="a.color"></span>
+                  <span class="bar-name">{{ a.short }}</span>
                 </div>
-              } @else {
-                <div class="empty-note">Faça mais simulados para ver a evolução</div>
+                <div class="bar-meta">
+                  <span class="bar-pct">{{ a.pct }}%</span>
+                  <span class="bar-frac">{{ a.correct }}/{{ a.total }}</span>
+                </div>
+              </div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="a.pct" [style.background]="a.color"></div>
+              </div>
+              @if (a.tri) {
+                <div class="bar-tri">Nota TRI {{ fmt(a.tri.score) }} <span class="bar-tri-se">± {{ fmt(a.tri.standardError) }}</span></div>
               }
             </div>
-          </div>
-        </div>
-
-        <!-- Desempenho por área -->
-        <div class="card">
-          <div class="panel-head-block">
-            <h3 class="panel-title">Desempenho por área</h3>
-            <div class="panel-sub">Acertos agregados</div>
-          </div>
-          @if (areaPerf.length === 0) {
-            <div class="empty-note empty-note-left">Faça simulados para ver</div>
           }
-          <div class="bar-list">
-            @for (a of areaPerf; track a.id) {
-              <div>
-                <div class="bar-head">
-                  <div class="bar-label">
-                    <span class="dot" [style.background]="a.color"></span>
-                    <span class="bar-name">{{a.short}}</span>
-                  </div>
-                  <div class="bar-meta">
-                    <span class="bar-pct">{{a.pct}}%</span>
-                    <span class="bar-frac">{{a.correct}}/{{a.total}}</span>
-                  </div>
-                </div>
-                <div class="bar-track">
-                  <div class="bar-fill" [style.width.%]="a.pct" [style.background]="a.color"></div>
-                </div>
-              </div>
-            }
-          </div>
         </div>
       </div>
+    </div>
 
-      @if (weakest) {
-        <div class="card reco-card">
-          <div class="reco-inner">
-            <div class="reco-icon" [style.background]="weakest.color">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 19 L6 22 L7 15 L2 10 L9 9 Z"/>
-              </svg>
+    @if (weakest(); as w) {
+      <div class="card reco-card">
+        <div class="reco-inner">
+          <div class="reco-icon" [style.background]="w.color">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2 L15 9 L22 10 L17 15 L18 22 L12 19 L6 22 L7 15 L2 10 L9 9 Z"/>
+            </svg>
+          </div>
+          <div class="reco-body">
+            <div class="reco-label">Recomendação inteligente</div>
+            <div class="reco-title">
+              Foque em <span class="reco-area">{{ w.short }}</span>, só {{ w.pct }}% de aproveitamento
             </div>
-            <div class="reco-body">
-              <div class="reco-label">Recomendação inteligente</div>
-              <div class="reco-title">
-                Foque em <span class="reco-area">{{weakest.short}}</span>, só {{weakest.pct}}% de aproveitamento
-              </div>
-              <div class="reco-sub">Um simulado focado pode melhorar sua média geral.</div>
+            <div class="reco-sub">
+              Um simulado focado pode melhorar sua média geral{{ w.tri ? ' (nota TRI atual: ' + fmt(w.tri.score) + ')' : '' }}.
             </div>
-            <button class="btn btn-primary btn-md" (click)="goFoco(weakest.id)">Treinar área</button>
           </div>
-        </div>
-      }
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="panel-head">
-            <h3 class="panel-title">Simulados recentes</h3>
-            <button class="btn-link" (click)="go('desempenho')">Ver tudo →</button>
-          </div>
-          @if (data.recentAttempts.length === 0) {
-            <div class="empty-note">Nenhum simulado ainda</div>
-          }
-          <div class="recent-list">
-            @for (h of data.recentAttempts.slice(0,4); track h.attemptId) {
-              <div class="recent-row">
-                <div class="recent-day">
-                  <div class="recent-day-num">{{getDay(h.date)}}</div>
-                </div>
-                <div class="recent-info">
-                  <div class="recent-name">
-                    {{h.mode === 'foco' ? 'Foco · ' + areaShort(h.area) : 'Simulado Geral'}} · {{h.total}}q
-                  </div>
-                  <div class="recent-date">
-                    {{fmtLong(h.date)}}{{h.timeTakenSeconds ? ' · ' + fmtMin(h.timeTakenSeconds) : ''}}
-                  </div>
-                </div>
-                <div class="recent-score">
-                  <div class="recent-pct" [style.color]="h.score >= 60 ? '#059669' : h.score >= 40 ? '#B8841C' : '#C73A1E'">
-                    {{h.score | number:'1.0-0'}}%
-                  </div>
-                  <div class="recent-frac">{{h.correct}}/{{h.total}}</div>
-                </div>
-              </div>
-            }
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="panel-head">
-            <h3 class="panel-title">Conteúdos sugeridos</h3>
-            <button class="btn-link" (click)="go('plano')">Ver plano →</button>
-          </div>
-          @if (topPlan.length === 0) {
-            <div class="empty-note">Faça simulados para receber sugestões</div>
-          }
-          <div class="suggest-list">
-            @for (p of topPlan; track p.topic) {
-              <div class="suggest-row">
-                <div class="suggest-bar" [style.background]="areaColor(p.area)"></div>
-                <div class="suggest-info">
-                  <div class="suggest-topic">{{p.topic}}</div>
-                  <div class="suggest-reason">{{p.reason}}</div>
-                </div>
-                <div class="suggest-tag" [style.background]="areaSoft(p.area)" [style.color]="areaColor(p.area)">
-                  <span class="dot-sm" [style.background]="areaColor(p.area)"></span>
-                  {{areaShort(p.area)}}
-                </div>
-              </div>
-            }
-          </div>
+          <button class="btn btn-primary btn-md" (click)="trainArea(w.areaCode)">Treinar área</button>
         </div>
       </div>
-    } @else {
-      <div class="loading-note">Carregando...</div>
     }
-  </div>
-}
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="panel-head">
+          <h3 class="panel-title">Simulados recentes</h3>
+          <button class="btn-link" (click)="go('desempenho')">Ver tudo →</button>
+        </div>
+        @if (d.history.length === 0) {
+          <div class="empty-note">Nenhum simulado ainda</div>
+        }
+        <div class="recent-list">
+          @for (h of d.history.slice(0, 4); track h.attemptId) {
+            <button class="recent-row" (click)="openResult(h)">
+              <div class="recent-day">
+                <div class="recent-day-num">{{ day(h.date) }}</div>
+              </div>
+              <div class="recent-info">
+                <div class="recent-name">{{ attemptLabel(h) }} · {{ h.total }}q</div>
+                <div class="recent-date">
+                  {{ fmtDate(h.date) }}{{ h.timeTakenSeconds ? ' · ' + duration(h.timeTakenSeconds) : '' }}
+                </div>
+              </div>
+              <div class="recent-score">
+                <div class="recent-pct" [style.color]="scoreColor(h.percentage)">{{ fmt(h.percentage) }}%</div>
+                <div class="recent-frac">{{ h.triAverage != null ? 'TRI ' + fmt(h.triAverage) : h.correct + '/' + h.total }}</div>
+              </div>
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head">
+          <h3 class="panel-title">Conteúdos sugeridos</h3>
+          <button class="btn-link" (click)="go('plano')">Ver plano →</button>
+        </div>
+        @if (topPlan().length === 0) {
+          <div class="empty-note">Faça simulados para receber sugestões</div>
+        }
+        <div class="suggest-list">
+          @for (p of topPlan(); track p.topicId) {
+            <div class="suggest-row">
+              <div class="suggest-bar" [style.background]="areaColor(p.areaCode)"></div>
+              <div class="suggest-info">
+                <div class="suggest-topic">{{ p.topic }}</div>
+                <div class="suggest-reason">{{ p.subject }} · {{ p.reason }}</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" (click)="trainTopic(p)">Treinar</button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  } @else if (!loadError()) {
+    <div class="loading-note">Carregando...</div>
+  }
+</div>

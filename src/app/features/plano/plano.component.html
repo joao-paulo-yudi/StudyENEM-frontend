@@ -2,7 +2,7 @@
   <header class="plano-head">
     <div>
       <h1 class="plano-title">Plano de Estudos</h1>
-      <p class="plano-subtitle">Tópicos priorizados com base no seu desempenho</p>
+      <p class="plano-subtitle">Conteúdos priorizados pelo índice de dificuldade do seu histórico de respostas</p>
     </div>
     <button class="btn btn-primary btn-md" (click)="go('simulado')">
       Praticar agora
@@ -10,7 +10,9 @@
     </button>
   </header>
 
-  @if (!data()) {
+  @if (loadError()) {
+    <div class="loading">Não foi possível carregar o plano.</div>
+  } @else if (!data()) {
     <div class="loading">Carregando...</div>
   }
 
@@ -25,69 +27,65 @@
         <button class="btn btn-primary btn-md" (click)="go('simulado')">Fazer meu primeiro simulado</button>
       </div>
     } @else {
-      <!-- Progress overview -->
       <div class="grid-4 overview">
         <div class="card stat-card">
-          <div class="stat-label">Tópicos no plano</div>
-          <div class="stat-value">{{d.studyPlan.length}}</div>
+          <div class="stat-label">Conteúdos no plano</div>
+          <div class="stat-value">{{ d.studyPlan.length }}</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label">Prioridade alta</div>
-          <div class="stat-value stat-danger">{{highCount()}}</div>
+          <div class="stat-value stat-danger">{{ highCount() }}</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label">Prioridade média</div>
-          <div class="stat-value stat-warn">{{medCount()}}</div>
+          <div class="stat-value stat-warn">{{ medCount() }}</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label">Dominando</div>
-          <div class="stat-value stat-success">{{lowCount()}}</div>
+          <div class="stat-value stat-success">{{ lowCount() }}</div>
         </div>
       </div>
 
-      <!-- Filter chips -->
       <div class="filters">
         @for (f of filters; track f.id) {
           <button (click)="filter.set(f.id)" class="filter-chip" [class.filter-chip-active]="filter() === f.id">
-            {{f.label}}
+            {{ f.label }}
           </button>
         }
       </div>
 
-      <!-- Plan items -->
       <div class="plan-list">
-        @for (item of filtered(); track item.topic) {
+        @for (item of filtered(); track item.topicId) {
           <div class="card plan-item">
             <div class="plan-item-row">
-              <div class="plan-accent" [style.background]="areaColor(item.area)"></div>
+              <div class="plan-accent" [style.background]="areaColor(item.areaCode)"></div>
               <div class="plan-content">
                 <div class="plan-main">
                   <div class="plan-topic-row">
-                    <span class="plan-topic">{{item.topic}}</span>
-                    <span class="priority-badge"
-                      [style.background]="priorityBg(item.priority)"
-                      [style.color]="priorityColor(item.priority)">
-                      {{item.priority}}
+                    <span class="plan-topic">{{ item.topic }}</span>
+                    <span class="priority-badge" [style.background]="priorityBg(item.priority)" [style.color]="priorityColor(item.priority)">
+                      {{ item.priority }}
                     </span>
                   </div>
-                  <div class="plan-reason">{{item.reason}}</div>
+                  <div class="plan-reason">{{ item.subject }} · {{ item.reason }}</div>
                 </div>
 
                 <div class="plan-stats">
                   <div class="plan-mastery">
-                    <div class="plan-mastery-pct" [style.color]="masteryColor(item.mastery)">{{item.mastery}}%</div>
-                    <div class="plan-mastery-label">domínio</div>
+                    <div class="plan-mastery-pct" [style.color]="masteryColor(item.mastery)">{{ item.mastery }}%</div>
+                    <div class="plan-mastery-label">acertos</div>
                   </div>
                   <div class="plan-meter">
                     <div class="bar-track">
-                      <div class="bar-fill" [style.width.%]="item.mastery" [style.background]="masteryColor(item.mastery)"></div>
+                      <div class="bar-fill" [style.width.%]="item.difficultyIndex * 100" [style.background]="priorityColor(item.priority)"></div>
                     </div>
-                    <div class="plan-attempts">{{item.attempts}} tentativas</div>
+                    <div class="plan-attempts">dificuldade {{ fmt(item.difficultyIndex, 2) }}</div>
                   </div>
-                  <div class="plan-tag" [style.background]="areaSoft(item.area)" [style.color]="areaColor(item.area)">
-                    <span class="dot-sm" [style.background]="areaColor(item.area)"></span>
-                    {{areaShort(item.area)}}
+                  <div class="plan-tag" [style.background]="areaSoft(item.areaCode)" [style.color]="areaColor(item.areaCode)">
+                    <span class="dot-sm" [style.background]="areaColor(item.areaCode)"></span>
+                    {{ areaShort(item.areaCode) }}
                   </div>
+                  <button class="btn btn-dark btn-sm" (click)="train(item)">Treinar</button>
                 </div>
               </div>
             </div>

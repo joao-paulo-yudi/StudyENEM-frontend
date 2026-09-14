@@ -1,6 +1,7 @@
-.page-narrow { max-width: 860px; }
+.page-narrow { max-width: 880px; }
 .loading { text-align: center; padding: 80px 0; color: var(--muted); }
 .stack { display: flex; flex-direction: column; gap: 12px; }
+.muted { color: var(--muted); font-weight: 400; }
 
 /* Header */
 .res-head { margin-bottom: 28px; text-align: center; }
@@ -15,9 +16,9 @@
 .score-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .score-pct { font-size: 32px; font-weight: 700; color: var(--navy); letter-spacing: -.03em; line-height: 1; }
 .score-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.score-stats { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; min-width: 260px; }
+.score-stats { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; min-width: 300px; }
 .score-stat { text-align: center; }
-.score-stat-num { font-size: 28px; font-weight: 700; letter-spacing: -.03em; }
+.score-stat-num { font-size: 26px; font-weight: 700; letter-spacing: -.03em; white-space: nowrap; }
 .score-correct { color: var(--success); }
 .score-wrong { color: var(--danger); }
 .score-total { color: var(--navy); }
@@ -26,7 +27,7 @@
 /* Tabs */
 .tabs { display: flex; gap: 2px; background: #F2F4F8; border-radius: 10px; padding: 4px; margin-bottom: 18px; }
 .tab {
-  flex: 1; padding: 9px 12px; border: none; border-radius: 8px; cursor: pointer;
+  flex: 1; padding: 9px 12px; border: none; border-radius: 8px; cursor: pointer; font-family: inherit;
   font-size: 14px; transition: all .15s; background: transparent; color: var(--muted); font-weight: 400;
 }
 .tab-active { background: #fff; color: var(--navy); font-weight: 600; }
@@ -38,28 +39,44 @@
 .ans-title { font-size: 13.5px; font-weight: 500; color: var(--navy); }
 .ans-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .ans-correct { color: var(--success); }
+.ans-blank { color: var(--danger); }
 .ans-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
 
 /* Por área */
 .area-row { padding: 18px 20px; }
-.area-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.area-row-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 12px; }
 .area-row-label { display: flex; align-items: center; gap: 10px; }
 .dot { width: 10px; height: 10px; border-radius: 50%; }
 .area-row-name { font-size: 15px; font-weight: 600; color: var(--navy); }
-.area-row-meta { display: flex; align-items: baseline; gap: 4px; }
+.area-row-meta { display: flex; align-items: baseline; gap: 6px; flex-shrink: 0; }
 .area-row-pct { font-size: 20px; font-weight: 700; }
 .area-row-frac { font-size: 12px; color: var(--muted); }
+.area-row-details { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 12px; font-size: 12.5px; color: var(--sub); }
 .bar-track { height: 8px; background: #F2F4F8; border-radius: 999px; overflow: hidden; }
 .bar-fill { height: 100%; border-radius: 999px; transition: width 700ms; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.6; margin-top: 4px; }
+
+/* Por conteúdo */
+.topic-row { padding: 14px 18px; }
+.topic-row-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.topic-row-info { min-width: 0; }
+.topic-row-name { font-size: 14px; font-weight: 600; color: var(--navy); }
+.topic-row-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.topic-row-pct { font-size: 16px; font-weight: 700; }
 
 /* Sugestões */
 .suggest-row { padding: 16px 18px; display: flex; align-items: center; gap: 14px; }
 .suggest-bar { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
-.suggest-info { flex: 1; }
+.suggest-info { flex: 1; min-width: 0; }
 .suggest-topic { font-size: 14px; font-weight: 600; color: var(--navy); }
 .suggest-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.suggest-tag { font-size: 12px; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
 .empty-card { text-align: center; padding: 32px; color: var(--muted); }
 
 /* Actions */
 .res-actions { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  .score-stats { grid-template-columns: repeat(2, 1fr); min-width: 0; }
+  .tabs { overflow-x: auto; }
+  .tab { white-space: nowrap; }
+}

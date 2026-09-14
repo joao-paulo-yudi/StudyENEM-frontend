@@ -1,20 +1,22 @@
 <div class="page page-narrow">
-  @if (!result()) {
+  @if (loadError()) {
+    <div class="loading">Resultado não encontrado.</div>
+  } @else if (!result()) {
     <div class="loading">Carregando resultado...</div>
   }
+
   @if (result(); as r) {
-    <!-- Header -->
     <header class="res-head">
-      <div class="res-kicker">Simulado finalizado</div>
+      <div class="res-kicker">{{ label() }} · finalizado</div>
       <h1 class="res-title">
-        @if (r.score >= 70) { Excelente resultado! }
-        @else if (r.score >= 50) { Bom trabalho! Continue assim. }
+        @if (r.percentage >= 70) { Excelente resultado! }
+        @else if (r.percentage >= 50) { Bom trabalho! Continue assim. }
         @else { Continue praticando! }
       </h1>
-      <p class="res-sub">{{fmtDate(r.finishedAt)}} · {{r.totalQuestions}} questões</p>
+      <p class="res-sub">{{ fmtDate(r.finishedAt) }} · {{ r.totalQuestions }} questões</p>
     </header>
 
-    <!-- Score ring + stats -->
+    <!-- Placar -->
     <div class="card score-card">
       <div class="score-ring">
         <svg width="150" height="150">
@@ -22,120 +24,167 @@
           <circle cx="75" cy="75" r="62" stroke="#F26B3A" stroke-width="14" fill="none"
             stroke-linecap="round"
             [attr.stroke-dasharray]="circ"
-            [attr.stroke-dashoffset]="ringOffset(r.score)"
+            [attr.stroke-dashoffset]="ringOffset(r.percentage)"
             transform="rotate(-90 75 75)"
             class="score-ring-progress"/>
         </svg>
         <div class="score-center">
-          <div class="score-pct">{{r.score | number:'1.0-0'}}%</div>
+          <div class="score-pct">{{ fmt(r.percentage) }}%</div>
           <div class="score-label">aproveitamento</div>
         </div>
       </div>
 
       <div class="score-stats">
         <div class="score-stat">
-          <div class="score-stat-num score-correct">{{r.correctAnswers}}</div>
+          <div class="score-stat-num score-correct">{{ r.correctAnswers }}</div>
           <div class="score-stat-label">acertos</div>
         </div>
         <div class="score-stat">
-          <div class="score-stat-num score-wrong">{{r.totalQuestions - r.correctAnswers}}</div>
-          <div class="score-stat-label">erros</div>
+          <div class="score-stat-num score-wrong">{{ wrong() }}</div>
+          <div class="score-stat-label">erros{{ blank() ? ' (' + blank() + ' em branco)' : '' }}</div>
         </div>
         <div class="score-stat">
-          <div class="score-stat-num score-total">{{r.totalQuestions}}</div>
-          <div class="score-stat-label">questões</div>
+          <div class="score-stat-num score-total">{{ r.triAverage != null ? fmt(r.triAverage) : '–' }}</div>
+          <div class="score-stat-label">nota TRI{{ r.byArea.length > 1 ? ' (média)' : '' }}</div>
+        </div>
+        <div class="score-stat">
+          <div class="score-stat-num score-total">{{ duration(r.timeTakenSeconds) }}</div>
+          <div class="score-stat-label">tempo total</div>
         </div>
       </div>
     </div>
 
-    <!-- Tabs -->
     <div class="tabs">
       @for (t of tabs; track t.id) {
-        <button (click)="tab.set(t.id)" class="tab" [class.tab-active]="tab() === t.id">
-          {{t.label}}
-        </button>
+        <button (click)="tab.set(t.id)" class="tab" [class.tab-active]="tab() === t.id">{{ t.label }}</button>
       }
     </div>
 
-    <!-- Tab: Gabarito -->
+    <!-- Por área -->
+    @if (tab() === 'areas') {
+      <div class="stack">
+        @for (a of r.byArea; track a.areaCode) {
+          <div class="card area-row">
+            <div class="area-row-head">
+              <div class="area-row-label">
+                <span class="dot" [style.background]="areaColor(a.areaCode)"></span>
+                <span class="area-row-name">{{ areaShort(a.areaCode) }}</span>
+              </div>
+              <div class="area-row-meta">
+                <span class="area-row-pct" [style.color]="scoreColor(a.percentage)">{{ fmt(a.percentage) }}%</span>
+                <span class="area-row-frac">{{ a.correct }}/{{ a.total }}</span>
+              </div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="a.percentage" [style.background]="areaColor(a.areaCode)"></div>
+            </div>
+            <div class="area-row-details">
+              <span>
+                @if (a.tri) {
+                  Nota TRI: <strong>{{ fmt(a.tri.score) }}</strong>
+                  <span class="muted">&nbsp;± {{ fmt(a.tri.standardError) }} · {{ a.tri.items }} {{ a.tri.items === 1 ? 'item' : 'itens' }}</span>
+                } @else {
+                  Nota TRI: <span class="muted">sem itens com parâmetros do INEP neste simulado</span>
+                }
+              </span>
+              <span>Tempo médio por questão: <strong>{{ duration(a.averageTimeSeconds) }}</strong></span>
+            </div>
+          </div>
+        }
+        <p class="note">
+          Nota TRI estimada como no ENEM (modelo logístico de 3 parâmetros com os parâmetros oficiais do INEP
+          e estimador EAP), na escala de notas do exame. Com poucas questões por área a estimativa fica
+          próxima de 500 e o erro-padrão (±) é maior.
+        </p>
+      </div>
+    }
+
+    <!-- Por conteúdo -->
+    @if (tab() === 'conteudos') {
+      <div class="stack">
+        @for (t of r.byTopic; track t.topicId) {
+          <div class="card topic-row">
+            <div class="topic-row-head">
+              <div class="topic-row-info">
+                <div class="topic-row-name">{{ t.topic }}</div>
+                <div class="topic-row-sub">{{ t.subject }} · {{ areaShort(t.areaCode) }}</div>
+              </div>
+              <div class="area-row-meta">
+                <span class="topic-row-pct" [style.color]="scoreColor(t.percentage)">{{ fmt(t.percentage) }}%</span>
+                <span class="area-row-frac">{{ t.correct }}/{{ t.total }}</span>
+              </div>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" [style.width.%]="t.percentage" [style.background]="areaColor(t.areaCode)"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Gabarito -->
     @if (tab() === 'gabarito') {
       <div class="stack">
-        @for (ans of r.answerDetails; track ans.questionId; let i = $index) {
-          <div class="card ans-row" [style.border-left-color]="ans.isCorrect ? '#059669' : '#C73A1E'">
-            <div class="ans-icon" [style.background]="ans.isCorrect ? '#DCF5EB' : '#FEE2E2'">
-              @if (ans.isCorrect) {
+        @for (ans of r.answers; track ans.questionId) {
+          <div class="card ans-row" [style.border-left-color]="!ans.correctOption ? '#C9CED8' : ans.isCorrect ? '#059669' : '#C73A1E'">
+            <div class="ans-icon" [style.background]="!ans.correctOption ? '#F2F4F8' : ans.isCorrect ? '#DCF5EB' : '#FEE2E2'">
+              @if (!ans.correctOption) {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7B8597" stroke-width="2.5" stroke-linecap="round"><line x1="6" y1="12" x2="18" y2="12"/></svg>
+              } @else if (ans.isCorrect) {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
               } @else {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C73A1E" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               }
             </div>
             <div class="ans-info">
-              <div class="ans-title">Questão {{i + 1}} · {{ans.topic}}</div>
+              <div class="ans-title">Questão {{ ans.order }} · {{ ans.topic }}</div>
               <div class="ans-detail">
-                Sua resposta: <strong [style.color]="ans.isCorrect ? '#059669' : '#C73A1E'">{{ans.selectedOption}}</strong>
-                @if (!ans.isCorrect) { &nbsp;· Correta: <strong class="ans-correct">{{ans.correctOption}}</strong> }
+                @if (!ans.correctOption) {
+                  <strong>Anulada pelo INEP</strong> · não conta na correção
+                } @else if (ans.selectedOption) {
+                  Sua resposta: <strong [style.color]="ans.isCorrect ? '#059669' : '#C73A1E'">{{ ans.selectedOption }}</strong>
+                } @else {
+                  <strong class="ans-blank">Em branco</strong>
+                }
+                @if (!ans.isCorrect && ans.correctOption) { · Correta: <strong class="ans-correct">{{ ans.correctOption }}</strong> }
+                · ENEM {{ ans.year }} Q{{ ans.number }}
+                @if (ans.timeSpentSeconds) { · {{ duration(ans.timeSpentSeconds) }} }
               </div>
             </div>
-            <div class="ans-tag" [style.background]="areaSoft(ans.area)" [style.color]="areaColor(ans.area)">
-              {{areaShort(ans.area)}}
+            <div class="ans-tag" [style.background]="areaSoft(ans.areaCode)" [style.color]="areaColor(ans.areaCode)">
+              {{ areaShort(ans.areaCode) }}
             </div>
           </div>
         }
       </div>
     }
 
-    <!-- Tab: Por área -->
-    @if (tab() === 'areas') {
-      <div class="stack">
-        @for (a of byArea(r); track a.area) {
-          <div class="card area-row">
-            <div class="area-row-head">
-              <div class="area-row-label">
-                <span class="dot" [style.background]="areaColor(a.area)"></span>
-                <span class="area-row-name">{{areaShort(a.area)}}</span>
-              </div>
-              <div class="area-row-meta">
-                <span class="area-row-pct" [style.color]="a.pct >= 60 ? '#059669' : a.pct >= 40 ? '#B8841C' : '#C73A1E'">{{a.pct}}%</span>
-                <span class="area-row-frac">{{a.correct}}/{{a.total}}</span>
-              </div>
-            </div>
-            <div class="bar-track">
-              <div class="bar-fill" [style.width.%]="a.pct" [style.background]="areaColor(a.area)"></div>
-            </div>
-          </div>
-        }
-      </div>
-    }
-
-    <!-- Tab: Sugestões -->
+    <!-- Sugestões -->
     @if (tab() === 'sugestoes') {
       <div class="stack">
-        @for (t of topicSuggestions(r); track t.topic) {
+        @for (t of suggestions(); track t.topicId) {
           <div class="card suggest-row">
-            <div class="suggest-bar" [style.background]="areaColor(t.area)"></div>
+            <div class="suggest-bar" [style.background]="areaColor(t.areaCode)"></div>
             <div class="suggest-info">
-              <div class="suggest-topic">{{t.topic}}</div>
-              <div class="suggest-meta">{{t.wrong}} {{t.wrong === 1 ? 'erro' : 'erros'}} · {{areaShort(t.area)}}</div>
+              <div class="suggest-topic">{{ t.topic }}</div>
+              <div class="suggest-meta">{{ t.wrong }} {{ t.wrong === 1 ? 'erro' : 'erros' }} em {{ t.total }} · {{ t.subject }} · {{ areaShort(t.areaCode) }}</div>
             </div>
-            <div class="suggest-tag" [style.background]="areaSoft(t.area)" [style.color]="areaColor(t.area)">
-              Revisar
-            </div>
+            <button class="btn btn-secondary btn-sm" (click)="train(t)">Treinar</button>
           </div>
         }
-        @if (topicSuggestions(r).length === 0) {
-          <div class="card empty-card">Parabéns! Nenhum tópico crítico identificado.</div>
+        @if (suggestions().length === 0) {
+          <div class="card empty-card">Parabéns! Nenhum conteúdo com erro neste simulado.</div>
         }
       </div>
     }
 
-    <!-- Actions -->
     <div class="res-actions">
-      <button class="btn btn-primary btn-lg" (click)="goSimulado()">
+      <button class="btn btn-primary btn-lg" (click)="go('simulado')">
         Novo simulado
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12H19M13 6l6 6-6 6"/></svg>
       </button>
-      <button class="btn btn-secondary btn-lg" (click)="goHome()">Voltar ao início</button>
-      <button class="btn btn-secondary btn-lg" (click)="goDesempenho()">Ver desempenho</button>
+      <button class="btn btn-secondary btn-lg" (click)="go('desempenho')">Ver desempenho</button>
+      <button class="btn btn-secondary btn-lg" (click)="go('plano')">Plano de estudos</button>
     </div>
   }
 </div>

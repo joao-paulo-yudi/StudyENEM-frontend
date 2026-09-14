@@ -1,10 +1,10 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService, PerformanceSummaryDto } from '../../core/api.service';
-import { StudentService } from '../../core/student.service';
-import { getAreaByName } from '../../core/areas.config';
-import { buildEvolutionChart, buildAreaRadarChart } from '../../core/charts';
+import { ApiService, AttemptSummaryDto, PerformanceSummaryDto, TopicPerformanceDto } from '../../core/api.service';
+import { areaColor, areaShort } from '../../core/areas.config';
+import { attemptLabel, formatDate, formatDuration, formatNumber, scoreColor } from '../../core/format';
+import { EvolutionMetric, buildAreaEvolutionChart, buildAreaRadarChart, buildEvolutionChart } from '../../core/charts';
 import { ChartComponent } from '../../shared/chart/chart.component';
 
 @Component({
@@ -17,37 +17,43 @@ import { ChartComponent } from '../../shared/chart/chart.component';
 export class DesempenhoComponent implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
-  private student = inject(StudentService);
 
   data = signal<PerformanceSummaryDto | null>(null);
+  loadError = signal(false);
+  areaMetric = signal<EvolutionMetric>('percentage');
+  showAllTopics = signal(false);
 
-  /** Últimos 8 simulados em ordem cronológica (mais antigo → mais recente). */
-  evoAttempts = computed(() => {
-    const d = this.data();
-    return d ? [...d.recentAttempts].slice(0, 8).reverse() : [];
-  });
-
-  /** Configurações memoizadas dos gráficos (referência estável até os dados mudarem). */
+  /** Últimos 10 simulados em ordem cronológica. */
+  evoAttempts = computed(() => [...(this.data()?.history ?? [])].slice(0, 10).reverse());
   evoChart = computed(() => buildEvolutionChart(this.evoAttempts()));
+  areaEvoChart = computed(() => buildAreaEvolutionChart(this.evoAttempts(), this.areaMetric()));
   radarChart = computed(() => buildAreaRadarChart(this.data()?.byArea ?? []));
 
+  overallPct = computed(() => {
+    const d = this.data();
+    return d && d.totalQuestions > 0 ? Math.round((d.totalCorrect / d.totalQuestions) * 100) : 0;
+  });
+
+  topics = computed<TopicPerformanceDto[]>(() => {
+    const list = this.data()?.byTopic ?? [];
+    return this.showAllTopics() ? list : list.slice(0, 10);
+  });
+
   ngOnInit() {
-    if (!this.student.name) { this.router.navigate(['/home']); return; }
-    this.api.getPerformance(this.student.name!).subscribe({ next: d => this.data.set(d) });
+    this.api.getPerformance().subscribe({
+      next: d => this.data.set(d),
+      error: () => this.loadError.set(true),
+    });
   }
 
-  overallPct(d: PerformanceSummaryDto) {
-    return d.totalQuestions > 0 ? Math.round((d.totalCorrect / d.totalQuestions) * 100) : 0;
-  }
-  studyHours(d: PerformanceSummaryDto) { return Math.round(d.totalTimeSeconds / 3600); }
+  openResult(a: AttemptSummaryDto) { this.router.navigate(['/resultado', a.attemptId]); }
 
-  sortedByArea(d: PerformanceSummaryDto) {
-    return d.byArea.map(a => ({ ...a, pct: Math.round(a.percentage) })).sort((a, b) => b.pct - a.pct);
-  }
-
-  areaShort(name?: string) { return name ? (getAreaByName(name)?.short ?? name) : 'Geral'; }
-  areaColor(name: string) { return getAreaByName(name)?.color ?? '#888'; }
-
-  fmtDate(s: string) { return new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }); }
-  fmtMin(sec: number) { return `${Math.round(sec / 60)}min`; }
+  readonly areaShort = areaShort;
+  readonly areaColor = areaColor;
+  readonly attemptLabel = attemptLabel;
+  readonly scoreColor = scoreColor;
+  readonly duration = formatDuration;
+  fmt(value: number, digits = 0) { return formatNumber(value, digits); }
+  fmtDate(iso: string) { return formatDate(iso); }
+  indexColor(index: number) { return scoreColor(100 - index * 100); }
 }

@@ -1,9 +1,9 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ApiService, PerformanceSummaryDto } from '../../core/api.service';
-import { StudentService } from '../../core/student.service';
-import { getAreaByName } from '../../core/areas.config';
+import { ApiService, PerformanceSummaryDto, Priority, StudyPlanItemDto } from '../../core/api.service';
+import { areaColor, areaShort, areaSoft } from '../../core/areas.config';
+import { formatNumber, scoreColor } from '../../core/format';
 
 @Component({
   selector: 'app-plano',
@@ -15,10 +15,10 @@ import { getAreaByName } from '../../core/areas.config';
 export class PlanoComponent implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
-  private student = inject(StudentService);
 
   data = signal<PerformanceSummaryDto | null>(null);
-  filter = signal<'todos' | 'alta' | 'média' | 'baixa'>('todos');
+  loadError = signal(false);
+  filter = signal<'todos' | Priority>('todos');
 
   readonly filters = [
     { id: 'todos' as const, label: 'Todos' },
@@ -27,9 +27,10 @@ export class PlanoComponent implements OnInit {
     { id: 'baixa' as const, label: 'Baixa prioridade' },
   ];
 
-  highCount = computed(() => this.data()?.studyPlan.filter(p => p.priority === 'alta').length ?? 0);
-  medCount = computed(() => this.data()?.studyPlan.filter(p => p.priority === 'média').length ?? 0);
-  lowCount = computed(() => this.data()?.studyPlan.filter(p => p.priority === 'baixa').length ?? 0);
+  private count(p: Priority) { return this.data()?.studyPlan.filter(i => i.priority === p).length ?? 0; }
+  highCount = computed(() => this.count('alta'));
+  medCount = computed(() => this.count('média'));
+  lowCount = computed(() => this.count('baixa'));
 
   filtered = computed(() => {
     const plan = this.data()?.studyPlan ?? [];
@@ -37,17 +38,22 @@ export class PlanoComponent implements OnInit {
   });
 
   ngOnInit() {
-    if (!this.student.name) { this.router.navigate(['/home']); return; }
-    this.api.getPerformance(this.student.name!).subscribe({ next: d => this.data.set(d) });
+    this.api.getPerformance().subscribe({
+      next: d => this.data.set(d),
+      error: () => this.loadError.set(true),
+    });
   }
 
-  go(r: string) { this.router.navigate(['/' + r]); }
+  go(route: string) { this.router.navigate(['/' + route]); }
+  train(item: StudyPlanItemDto) {
+    this.router.navigate(['/simulado'], { queryParams: { topic: item.topicId, topicName: item.topic } });
+  }
 
-  areaColor(name: string) { return getAreaByName(name)?.color ?? '#888'; }
-  areaSoft(name: string) { return getAreaByName(name)?.soft ?? '#F5F6FA'; }
-  areaShort(name: string) { return getAreaByName(name)?.short ?? name; }
-
+  readonly areaColor = areaColor;
+  readonly areaSoft = areaSoft;
+  readonly areaShort = areaShort;
+  fmt(value: number, digits = 0) { return formatNumber(value, digits); }
   priorityBg(p: string) { return p === 'alta' ? '#FEE2E2' : p === 'média' ? '#FEF3E2' : '#DCF5EB'; }
   priorityColor(p: string) { return p === 'alta' ? '#C73A1E' : p === 'média' ? '#B8841C' : '#059669'; }
-  masteryColor(m: number) { return m >= 60 ? '#059669' : m >= 40 ? '#B8841C' : '#C73A1E'; }
+  masteryColor(m: number) { return scoreColor(m); }
 }

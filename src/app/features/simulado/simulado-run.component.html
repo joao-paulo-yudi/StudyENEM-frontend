@@ -1,5 +1,5 @@
 <div class="run-shell">
-  <!-- Top bar -->
+  <!-- Barra superior -->
   <div class="run-topbar">
     <div class="run-brand">
       <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
@@ -8,60 +8,62 @@
         <path d="M20 26 L20 18 L26 18 L26 26 Z" fill="#fff" opacity=".7"/>
         <path d="M29 26 L29 10 L31 10 L31 26 Z" fill="#fff" opacity=".4"/>
       </svg>
-      <span class="run-mode">
-        {{config()?.mode === 'foco' ? 'Foco · ' + (areaShort()) : 'Simulado Geral'}}
-      </span>
+      <span class="run-mode">{{ modeLabel() }}</span>
     </div>
     <div class="run-topright">
-      @if (config()?.timed) {
-        <div class="run-timer">
+      @if (timed()) {
+        <div class="run-timer" [class.run-timer-warn]="nearLimit()" title="Tempo restante">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/>
           </svg>
-          <span class="run-timer-text">{{timerDisplay()}}</span>
+          <span class="run-timer-text">{{ clock() }}</span>
         </div>
       }
       <div class="run-counter">
-        <span class="run-counter-cur">{{current() + 1}}</span> / {{total()}}
+        <span class="run-counter-cur">{{ current() + 1 }}</span> / {{ total() }}
       </div>
-      <button (click)="confirmQuit()" class="run-quit">Sair</button>
+      <button (click)="showQuitModal.set(true)" class="run-quit">Sair</button>
     </div>
   </div>
 
-  <!-- Progress bar -->
   <div class="run-progress">
     <div class="run-progress-fill" [style.width.%]="progressPct()"></div>
   </div>
 
-  <div class="run-body">
-    <!-- Main question -->
-    <div>
-      <div class="card q-card">
-        <div class="q-meta">
-          <span class="q-num">Questão {{current() + 1}}</span>
-          @if (currentQ()?.area) {
-            <span class="q-tag"
-              [style.background]="areaSoft(currentQ()!.area)"
-              [style.color]="areaColor(currentQ()!.area)">
-              {{areaShortByName(currentQ()!.area)}}
-            </span>
-          }
-          @if (currentQ()?.subject) {
-            <span class="q-tag q-tag-muted">{{currentQ()!.subject}}</span>
-          }
-        </div>
-        <p class="q-statement">{{currentQ()?.statement}}</p>
-        <div class="opt-list">
-          @for (opt of options; track opt.key) {
-            <button class="opt-btn" [class.selected]="answers()[current()] === opt.key" (click)="select(opt.key)">
-              <div class="opt-letter">{{opt.key}}</div>
-              <span class="opt-text">{{currentQ()?.[opt.field]}}</span>
-            </button>
-          }
-        </div>
-      </div>
+  @if (nearLimit() && !alertDismissed() && !timeUp()) {
+    <div class="time-alert" role="alert">
+      <span>Faltam {{ duration(remaining()) }} para acabar o tempo. Revise as questões em branco e finalize o simulado.</span>
+      <button class="time-alert-close" (click)="alertDismissed.set(true)" aria-label="Fechar alerta">×</button>
+    </div>
+  }
 
-      <!-- Navigation -->
+  <div class="run-body">
+    <div class="run-main">
+      @if (currentQ(); as q) {
+        <div class="card q-card">
+          <div class="q-meta">
+            <span class="q-num">Questão {{ current() + 1 }}</span>
+            <span class="q-tag" [style.background]="areaSoft(q.areaCode)" [style.color]="areaColor(q.areaCode)">{{ areaShort(q.areaCode) }}</span>
+            @if (q.subject !== areaShort(q.areaCode)) {
+              <span class="q-tag q-tag-muted">{{ q.subject }}</span>
+            }
+            @if (q.foreignLanguage) {
+              <span class="q-tag q-tag-muted">{{ q.foreignLanguage === 'ingles' ? 'Inglês' : 'Espanhol' }}</span>
+            }
+            <span class="q-origin">ENEM {{ q.year }} · Q{{ q.number }}</span>
+          </div>
+          <div class="q-statement md" [innerHTML]="q.statement | markdown"></div>
+          <div class="opt-list">
+            @for (alt of q.alternatives; track alt.letter) {
+              <button class="opt-btn" [class.selected]="answers()[current()] === alt.letter" (click)="select(alt.letter)">
+                <span class="opt-letter">{{ alt.letter }}</span>
+                <span class="opt-text md" [innerHTML]="alt.text | markdown"></span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
       <div class="q-nav">
         <button class="btn btn-secondary btn-md" [disabled]="current() === 0" (click)="prev()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
@@ -73,34 +75,34 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12H19M13 6l6 6-6 6"/></svg>
           </button>
         } @else {
-          <button class="btn btn-primary btn-md" (click)="submit()" [disabled]="submitting()">
-            {{submitting() ? 'Enviando...' : 'Finalizar simulado'}}
+          <button class="btn btn-primary btn-md" (click)="requestSubmit()" [disabled]="submitting()">
+            {{ submitting() ? 'Enviando...' : 'Finalizar simulado' }}
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20,6 9,17 4,12"/></svg>
           </button>
         }
       </div>
+      @if (submitError() && !timeUp()) {
+        <div class="submit-error">{{ submitError() }}</div>
+      }
     </div>
 
-    <!-- Sidebar -->
+    <!-- Lateral -->
     <div class="run-aside">
       <div class="card run-aside-card">
         <div class="aside-title">Progresso</div>
         <div class="dot-grid">
-          @for (q of questions(); track $index) {
-            <div class="q-dot"
-              [class.answered]="answers()[$index] && $index !== current()"
-              [class.current]="$index === current()"
-              (click)="goTo($index)"
-              [title]="'Questão ' + ($index + 1)"></div>
+          @for (q of questions(); track q.id; let i = $index) {
+            <button class="q-dot"
+              [class.answered]="answers()[i] && i !== current()"
+              [class.current]="i === current()"
+              (click)="goTo(i)"
+              [title]="'Questão ' + (i + 1)"
+              [attr.aria-label]="'Ir para a questão ' + (i + 1)"></button>
           }
         </div>
         <div class="dot-legend">
-          <span class="legend-item">
-            <span class="legend-dot legend-answered"></span> Respondida
-          </span>
-          <span class="legend-item">
-            <span class="legend-dot legend-current"></span> Atual
-          </span>
+          <span class="legend-item"><span class="legend-dot legend-answered"></span> Respondida</span>
+          <span class="legend-item"><span class="legend-dot legend-current"></span> Atual</span>
         </div>
       </div>
 
@@ -109,18 +111,17 @@
         <div class="summary">
           <div class="summary-line">
             <span class="summary-muted">Respondidas</span>
-            <span class="summary-strong">{{answeredCount()}} / {{total()}}</span>
+            <span class="summary-strong">{{ answeredCount() }} / {{ total() }}</span>
           </div>
           <div class="summary-track">
             <div class="summary-fill" [style.width.%]="progressPct()"></div>
           </div>
-          @if (config()?.timed) {
-            <div class="summary-line summary-line-spaced">
-              <span class="summary-muted">Tempo</span>
-              <span class="summary-strong summary-mono">{{timerDisplay()}}</span>
-            </div>
-          }
+          <div class="summary-line summary-line-spaced">
+            <span class="summary-muted">{{ timed() ? 'Tempo restante' : 'Tempo decorrido' }}</span>
+            <span class="summary-strong summary-mono" [class.summary-warn]="nearLimit()">{{ clock() }}</span>
+          </div>
         </div>
+        <button class="btn btn-dark btn-md aside-finish" (click)="requestSubmit()" [disabled]="submitting()">Finalizar simulado</button>
       </div>
     </div>
   </div>
@@ -135,6 +136,36 @@
         <button class="btn btn-secondary btn-md modal-btn" (click)="showQuitModal.set(false)">Continuar</button>
         <button class="btn btn-primary btn-md modal-btn modal-btn-danger" (click)="quit()">Sair</button>
       </div>
+    </div>
+  </div>
+}
+
+@if (showSubmitModal()) {
+  <div class="modal-overlay" (click)="showSubmitModal.set(false)">
+    <div class="card modal" (click)="$event.stopPropagation()">
+      <h3 class="modal-title">Finalizar simulado?</h3>
+      <p class="modal-text">
+        Você deixou {{ blankCount() }} {{ blankCount() === 1 ? 'questão' : 'questões' }} em branco.
+        Como no ENEM, questões em branco contam como erro.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary btn-md modal-btn" (click)="showSubmitModal.set(false)">Revisar</button>
+        <button class="btn btn-primary btn-md modal-btn" (click)="submit()">Finalizar</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (timeUp()) {
+  <div class="modal-overlay">
+    <div class="card modal">
+      <h3 class="modal-title">Tempo esgotado</h3>
+      <p class="modal-text">{{ submitError() || 'Enviando suas respostas...' }}</p>
+      @if (submitError()) {
+        <div class="modal-actions">
+          <button class="btn btn-primary btn-md modal-btn" (click)="submit()">Tentar novamente</button>
+        </div>
+      }
     </div>
   </div>
 }
