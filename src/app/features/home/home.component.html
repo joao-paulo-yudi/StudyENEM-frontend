@@ -7,10 +7,12 @@
         @else if (!data()) { Carregando seu desempenho... }
         @else if (data()!.totalAttempts === 0) { Faça seu primeiro simulado! }
         @else if (comparison()) {
-          @if (comparison()!.percentageDelta >= 0) {
-            Você está avançando. +{{ fmt(comparison()!.percentageDelta, 1) }} p.p. desde o último simulado.
+          @if (comparison()!.percentageDelta > 0) {
+            Você está avançando: de {{ fmt(comparison()!.previousPercentage) }}% para {{ fmt(comparison()!.currentPercentage) }}% de acertos.
+          } @else if (comparison()!.percentageDelta < 0) {
+            Seus acertos caíram de {{ fmt(comparison()!.previousPercentage) }}% para {{ fmt(comparison()!.currentPercentage) }}%. Vamos recuperar!
           } @else {
-            {{ fmt(comparison()!.percentageDelta, 1) }} p.p. em relação ao simulado anterior. Vamos recuperar!
+            Você manteve {{ fmt(comparison()!.currentPercentage) }}% de acertos no último simulado.
           }
         }
         @else { 1 simulado realizado. Continue praticando! }

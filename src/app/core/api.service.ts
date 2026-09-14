@@ -87,7 +87,7 @@ export interface TopicPerformanceDto {
   /** Erros / questões respondidas no conteúdo (0 a 1). */
   difficultyIndex: number; averageTimeSeconds: number | null;
 }
-export interface ComparisonDto { percentageDelta: number; triAverageDelta: number | null; }
+export interface ComparisonDto { currentPercentage: number; previousPercentage: number; percentageDelta: number; triAverageDelta: number | null; }
 export interface StudyPlanItemDto {
   topicId: number; topic: string; subject: string; areaCode: AreaCode;
   priority: Priority; difficultyIndex: number; mastery: number; attempts: number; reason: string;
