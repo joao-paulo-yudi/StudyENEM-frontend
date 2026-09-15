@@ -76,5 +76,27 @@
 .q-empty-text { font-size: 13px; }
 
 /* Pagination */
-.pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 24px; flex-wrap: wrap; }
 .pagination-info { font-size: 13px; color: var(--muted); padding: 0 12px; }
+
+@media (max-width: 900px) {
+  .q-head { margin-bottom: 22px; }
+  .q-title { font-size: 23px; }
+  /* Os selects passam a ocupar meia linha cada, em vez de espremer tudo numa só */
+  .filter-search { flex: 1 1 100%; min-width: 0; }
+  .filter-field, .filter-field-sm { flex: 1 1 calc(50% - 7px); min-width: 0; }
+  .filters > .btn { flex: 1 1 100%; }
+}
+
+@media (max-width: 560px) {
+  .filter-field, .filter-field-sm { flex-basis: 100%; }
+  .q-content { padding: 16px 14px; }
+  .q-tags { gap: 6px; }
+  .q-diff { margin-left: 0; }
+  .q-statement { font-size: 13.5px; }
+  .q-statement-clamped { max-height: 108px; }
+  .q-actions { flex-wrap: wrap; gap: 14px; }
+  .q-option { padding: 10px; }
+  .pagination > .btn { flex: 1; }
+  .pagination-info { order: -1; flex: 1 0 100%; text-align: center; padding-bottom: 4px; }
+}

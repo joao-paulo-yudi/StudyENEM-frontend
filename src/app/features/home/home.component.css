@@ -85,8 +85,32 @@
 }
 
 @media (max-width: 900px) {
-  .dash-head { flex-direction: column; align-items: flex-start; }
+  .dash-head { flex-direction: column; align-items: flex-start; margin-bottom: 22px; }
+  .dash-title { font-size: 23px; }
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .grid-2-1, .grid-2 { grid-template-columns: 1fr; }
-  .evo-flex { flex-direction: column; align-items: stretch; }
+  .evo-flex { flex-direction: column; align-items: stretch; gap: 18px; }
+  .ring-wrap { align-self: center; }
+  .chart-box { height: 170px; }
+}
+
+@media (max-width: 760px) {
+  .reco-inner { flex-wrap: wrap; gap: 14px; }
+  .reco-icon { width: 46px; height: 46px; border-radius: 12px; }
+  .reco-body { flex: 1 1 200px; }
+  .reco-title { font-size: 16px; }
+  .reco-inner > .btn { flex: 1 0 100%; }
+  .suggest-row { flex-wrap: wrap; }
+  .suggest-info { flex: 1 1 60%; }
+}
+
+@media (max-width: 520px) {
+  .dash-head > .btn { width: 100%; }
+  .dash-title { font-size: 21px; }
+  .stat-card { padding: 15px; }
+  .stat-value { font-size: 25px; }
+  .stat-label { font-size: 10.5px; }
+  .recent-row { gap: 10px; padding: 12px 2px; }
+  .recent-day { width: 36px; height: 36px; }
+  .suggest-row { padding: 12px; }
 }

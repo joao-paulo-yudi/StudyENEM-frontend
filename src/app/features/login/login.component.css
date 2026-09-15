@@ -29,6 +29,9 @@
 .form-subtitle { font-size: 14px; color: var(--muted); margin: 8px 0 28px; }
 
 .social-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 22px; }
+/* O iframe do Google Identity Services é inserido aqui; vazio, não ocupa espaço. */
+.google-button { display: flex; justify-content: center; }
+.google-button:empty { display: none; }
 
 .divider {
   display: flex; align-items: center; gap: 12px; color: #9AA3B5;
@@ -61,3 +64,27 @@
 
 .test-hint { text-align: center; margin-top: 18px; font-size: 12px; color: #9AA3B5; }
 .test-hint b { color: var(--sub); }
+
+/* Marca compacta (só aparece quando o painel lateral some) */
+.login-mobile-brand { display: none; align-items: center; gap: 11px; margin-bottom: 26px; }
+.mobile-brand-name { font-size: 18px; font-weight: 700; color: var(--navy); letter-spacing: -.02em; line-height: 1.1; }
+.mobile-brand-sub { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; margin-top: 2px; }
+
+@media (max-width: 1100px) {
+  .login-brand { padding: 40px 36px 36px; }
+  .brand-headline { font-size: 32px; }
+  .brand-desc { font-size: 14px; margin-top: 16px; }
+}
+
+/* Abaixo de 880px o painel de marca é ocultado (styles.css) */
+@media (max-width: 880px) {
+  .login-mobile-brand { display: flex; }
+  .login-form-pane { align-items: flex-start; padding: 32px 20px 48px; }
+}
+
+@media (max-width: 520px) {
+  .form-title { font-size: 22px; }
+  .form-subtitle { font-size: 13.5px; margin-bottom: 22px; }
+  .social-group { margin-bottom: 18px; }
+  .login-form-pane { padding: 26px 16px 40px; }
+}

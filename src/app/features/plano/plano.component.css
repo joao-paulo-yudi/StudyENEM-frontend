@@ -45,4 +45,24 @@
 .plan-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .dot-sm { width: 6px; height: 6px; border-radius: 50%; }
 
-@media (max-width: 900px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 900px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .plano-head { margin-bottom: 22px; }
+  .plano-title { font-size: 23px; }
+}
+
+@media (max-width: 760px) {
+  .plano-head { flex-direction: column; align-items: stretch; }
+  .plano-head > .btn { justify-content: center; }
+  .plan-content { align-items: flex-start; gap: 12px; padding: 14px 16px; }
+  .plan-main { min-width: 0; flex: 1 1 100%; }
+  .plan-stats { width: 100%; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+  .plan-meter { width: auto; flex: 1 1 110px; }
+  .stat-card { padding: 15px; }
+  .stat-value { font-size: 25px; }
+}
+
+@media (max-width: 420px) {
+  .plan-stats > .btn { flex: 1 0 100%; order: 5; }
+  .plan-topic-row { flex-wrap: wrap; }
+}

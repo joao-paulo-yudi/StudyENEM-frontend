@@ -1,9 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService, AuthResponseDto } from '../../core/api.service';
+import { GoogleAuthService } from '../../core/google-auth.service';
 import { StudentService } from '../../core/student.service';
+
+/** Estado do botão do Google: carregando a configuração, pronto ou não configurado. */
+type GoogleState = 'loading' | 'ready' | 'unavailable';
 
 @Component({
   selector: 'app-login',
@@ -12,10 +16,14 @@ import { StudentService } from '../../core/student.service';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css',
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
   private api = inject(ApiService);
   private student = inject(StudentService);
   private router = inject(Router);
+  private google = inject(GoogleAuthService);
+  private zone = inject(NgZone);
+
+  @ViewChild('googleButton') private googleButton?: ElementRef<HTMLDivElement>;
 
   mode = signal<'login' | 'signup'>('login');
   email = 'joao@studyenem.com';
@@ -25,6 +33,16 @@ export class LoginComponent {
   loading = signal(false);
   error = signal('');
   info = signal('');
+  googleState = signal<GoogleState>('loading');
+
+  ngAfterViewInit() {
+    this.api.getAuthConfig().subscribe({
+      next: config => config.googleClientId
+        ? this.setupGoogle(config.googleClientId)
+        : this.googleState.set('unavailable'),
+      error: () => this.googleState.set('unavailable'),
+    });
+  }
 
   toggleMode() {
     this.mode.set(this.mode() === 'login' ? 'signup' : 'login');
@@ -56,6 +74,28 @@ export class LoginComponent {
         error: err => { this.loading.set(false); this.error.set(err?.error?.message ?? 'Não foi possível criar a conta.'); },
       });
     }
+  }
+
+  private setupGoogle(clientId: string) {
+    const container = this.googleButton?.nativeElement;
+    if (!container) { this.googleState.set('unavailable'); return; }
+
+    // O callback do Google roda fora do Angular: NgZone.run devolve o fluxo para a aplicação.
+    this.google
+      .renderButton(container, clientId, credential => this.zone.run(() => this.loginWithGoogle(credential)))
+      .then(() => this.googleState.set('ready'))
+      .catch(() => this.googleState.set('unavailable'));
+  }
+
+  private loginWithGoogle(credential: string) {
+    if (this.loading()) return;
+    this.error.set('');
+    this.info.set('');
+    this.loading.set(true);
+    this.api.googleLogin({ credential }).subscribe({
+      next: u => this.onAuth(u),
+      error: err => { this.loading.set(false); this.error.set(err?.error?.message ?? 'Não foi possível entrar com o Google.'); },
+    });
   }
 
   private onAuth(response: AuthResponseDto) {

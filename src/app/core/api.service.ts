@@ -11,6 +11,10 @@ export interface AuthUserDto { id: number; name: string; email: string; }
 export interface AuthResponseDto { token: string; expiresAt: string; user: AuthUserDto; }
 export interface LoginDto { identifier: string; password: string; }
 export interface RegisterDto { name: string; email: string; password: string; }
+/** ID token devolvido pelo Google Identity Services. */
+export interface GoogleLoginDto { credential: string; }
+/** Provedores de login habilitados no servidor. */
+export interface AuthConfigDto { googleClientId: string | null; }
 
 // ── Banco de questões ───────────────────────────────────────────────────────
 export interface TopicDto { id: number; name: string; questionCount: number; }
@@ -104,8 +108,10 @@ export class ApiService {
   private http = inject(HttpClient);
   private base = environment.apiUrl;
 
+  getAuthConfig() { return this.http.get<AuthConfigDto>(`${this.base}/auth/config`); }
   login(dto: LoginDto) { return this.http.post<AuthResponseDto>(`${this.base}/auth/login`, dto); }
   register(dto: RegisterDto) { return this.http.post<AuthResponseDto>(`${this.base}/auth/register`, dto); }
+  googleLogin(dto: GoogleLoginDto) { return this.http.post<AuthResponseDto>(`${this.base}/auth/google`, dto); }
 
   getCatalog() { return this.http.get<QuestionCatalogDto>(`${this.base}/questions/catalog`); }
   getQuestionBank() { return this.http.get<QuestionBankItemDto[]>(`${this.base}/questions`); }

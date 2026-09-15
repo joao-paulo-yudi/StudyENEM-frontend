@@ -1,14 +1,27 @@
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
-.brand-text { line-height: 1; }
+.brand-mark { flex-shrink: 0; }
+.brand-text { line-height: 1; min-width: 0; }
 .brand-name { font-weight: 700; letter-spacing: -0.02em; font-size: 17px; color: var(--navy); }
 .brand-sub {
   font-size: 10.5px; color: var(--muted); letter-spacing: .04em;
-  text-transform: uppercase; margin-top: 2px;
+  text-transform: uppercase; margin-top: 2px; white-space: nowrap;
 }
 
-.nav { display: flex; flex-direction: column; gap: 2px; }
+/* Botão de retrair (desktop) / fechar (mobile) */
+.sidebar-toggle {
+  margin-left: auto; flex-shrink: 0;
+  width: 30px; height: 30px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: transparent; border: 1px solid transparent;
+  color: var(--muted); cursor: pointer; transition: background .15s, color .15s;
+}
+.sidebar-toggle:hover { background: var(--bg); color: var(--text); border-color: var(--border); }
+.flip-x { transform: scaleX(-1); }
 
-.spacer { flex: 1; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.spacer { flex: 1; min-height: 18px; }
 
 .countdown {
   padding: 14px; border-radius: 12px; color: #fff;
@@ -38,3 +51,25 @@
   color: var(--muted); display: grid; place-items: center; flex-shrink: 0;
 }
 .user-logout:hover { color: var(--text); }
+
+/* ── Trilho retraído (somente desktop) ─────────────────────── */
+.sidebar-collapsed .brand { flex-direction: column; gap: 10px; padding: 4px 0 16px; }
+.sidebar-collapsed .brand-text { display: none; }
+.sidebar-collapsed .sidebar-toggle { margin-left: 0; }
+
+.sidebar-collapsed .nav-btn { justify-content: center; padding: 11px 0; gap: 0; }
+.sidebar-collapsed .nav-label { display: none; }
+
+.sidebar-collapsed .countdown { padding: 10px 6px; text-align: center; }
+.sidebar-collapsed .countdown-label,
+.sidebar-collapsed .countdown-date,
+.sidebar-collapsed .countdown-unit { display: none; }
+.sidebar-collapsed .countdown-days { font-size: 16px; margin-top: 0; }
+
+.sidebar-collapsed .user-card { flex-direction: column; gap: 6px; padding: 10px 6px; }
+.sidebar-collapsed .user-info { display: none; }
+
+/* No mobile a gaveta ganha um respiro extra no rodapé (barras do navegador) */
+@media (max-width: 960px) {
+  .user-card { margin-bottom: max(0px, env(safe-area-inset-bottom)); }
+}
