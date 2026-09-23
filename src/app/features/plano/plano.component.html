@@ -2,7 +2,7 @@
   <header class="plano-head">
     <div>
       <h1 class="plano-title">Plano de Estudos</h1>
-      <p class="plano-subtitle">Conteúdos priorizados pelo índice de dificuldade do seu histórico de respostas</p>
+      <p class="plano-subtitle">Conteúdos priorizados pelo índice de dificuldade do seu histórico, com videoaulas e exercícios para cada um</p>
     </div>
     <button class="btn btn-primary btn-md" (click)="go('simulado')">
       Praticar agora
@@ -17,7 +17,7 @@
   }
 
   @if (data(); as d) {
-    @if (d.studyPlan.length === 0) {
+    @if (d.items.length === 0) {
       <div class="card empty-state">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ECEEF3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon">
           <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -30,68 +30,172 @@
       <div class="grid-4 overview">
         <div class="card stat-card">
           <div class="stat-label">Conteúdos no plano</div>
-          <div class="stat-value">{{ d.studyPlan.length }}</div>
+          <div class="stat-value">{{ d.totalTopics }}</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label">Prioridade alta</div>
-          <div class="stat-value stat-danger">{{ highCount() }}</div>
-        </div>
-        <div class="card stat-card">
-          <div class="stat-label">Prioridade média</div>
-          <div class="stat-value stat-warn">{{ medCount() }}</div>
+          <div class="stat-value stat-danger">{{ d.highPriority }}</div>
         </div>
         <div class="card stat-card">
           <div class="stat-label">Dominando</div>
-          <div class="stat-value stat-success">{{ lowCount() }}</div>
+          <div class="stat-value stat-success">{{ d.lowPriority }}</div>
+        </div>
+        <div class="card stat-card">
+          <div class="stat-label">Estudo sugerido na semana</div>
+          <div class="stat-value">{{ weekHours() }}h</div>
         </div>
       </div>
 
-      <div class="filters">
-        @for (f of filters; track f.id) {
-          <button (click)="filter.set(f.id)" class="filter-chip" [class.filter-chip-active]="filter() === f.id">
-            {{ f.label }}
-          </button>
-        }
+      <div class="tabs">
+        <button class="tab-btn" [class.tab-btn-active]="tab() === 'conteudos'" (click)="tab.set('conteudos')">
+          Conteúdos prioritários
+        </button>
+        <button class="tab-btn" [class.tab-btn-active]="tab() === 'cronograma'" (click)="tab.set('cronograma')">
+          Cronograma da semana
+        </button>
       </div>
 
-      <div class="plan-list">
-        @for (item of filtered(); track item.topicId) {
-          <div class="card plan-item">
-            <div class="plan-item-row">
-              <div class="plan-accent" [style.background]="areaColor(item.areaCode)"></div>
-              <div class="plan-content">
-                <div class="plan-main">
-                  <div class="plan-topic-row">
-                    <span class="plan-topic">{{ item.topic }}</span>
-                    <span class="priority-badge" [style.background]="priorityBg(item.priority)" [style.color]="priorityColor(item.priority)">
-                      {{ item.priority }}
-                    </span>
-                  </div>
-                  <div class="plan-reason">{{ item.subject }} · {{ item.reason }}</div>
-                </div>
+      @if (tab() === 'conteudos') {
+        <div class="filters">
+          @for (f of filters; track f.id) {
+            <button (click)="filter.set(f.id)" class="filter-chip" [class.filter-chip-active]="filter() === f.id">
+              {{ f.label }}
+            </button>
+          }
+        </div>
 
-                <div class="plan-stats">
-                  <div class="plan-mastery">
-                    <div class="plan-mastery-pct" [style.color]="masteryColor(item.mastery)">{{ item.mastery }}%</div>
-                    <div class="plan-mastery-label">acertos</div>
-                  </div>
-                  <div class="plan-meter">
-                    <div class="bar-track">
-                      <div class="bar-fill" [style.width.%]="item.difficultyIndex * 100" [style.background]="priorityColor(item.priority)"></div>
+        <div class="plan-list">
+          @for (item of filtered(); track item.topicId) {
+            <div class="card plan-item">
+              <div class="plan-item-row">
+                <div class="plan-accent" [style.background]="areaColor(item.areaCode)"></div>
+                <div class="plan-body">
+                  <div class="plan-content">
+                    <div class="plan-main">
+                      <div class="plan-topic-row">
+                        <span class="plan-step">{{ item.step }}</span>
+                        <span class="plan-topic">{{ item.topic }}</span>
+                        <span class="priority-badge" [style.background]="priorityBg(item.priority)" [style.color]="priorityColor(item.priority)">
+                          {{ item.priority }}
+                        </span>
+                      </div>
+                      <div class="plan-reason">{{ item.subject }} · {{ item.reason }}</div>
+                      <div class="plan-effort">
+                        <span class="effort-chip">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                          {{ duration(item.estimatedMinutes) }} de estudo
+                        </span>
+                        <span class="effort-chip">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                          {{ item.recommendedQuestions }} questões
+                        </span>
+                      </div>
                     </div>
-                    <div class="plan-attempts">dificuldade {{ fmt(item.difficultyIndex, 2) }}</div>
+
+                    <div class="plan-stats">
+                      <div class="plan-mastery">
+                        <div class="plan-mastery-pct" [style.color]="masteryColor(item.mastery)">{{ item.mastery }}%</div>
+                        <div class="plan-mastery-label">acertos</div>
+                      </div>
+                      <div class="plan-meter">
+                        <div class="bar-track">
+                          <div class="bar-fill" [style.width.%]="item.difficultyIndex * 100" [style.background]="priorityColor(item.priority)"></div>
+                        </div>
+                        <div class="plan-attempts">dificuldade {{ fmt(item.difficultyIndex, 2) }}</div>
+                      </div>
+                      <div class="plan-tag" [style.background]="areaSoft(item.areaCode)" [style.color]="areaColor(item.areaCode)">
+                        <span class="dot-sm" [style.background]="areaColor(item.areaCode)"></span>
+                        {{ areaShort(item.areaCode) }}
+                      </div>
+                      <button class="btn btn-dark btn-sm" (click)="train(item)">Treinar</button>
+                    </div>
                   </div>
-                  <div class="plan-tag" [style.background]="areaSoft(item.areaCode)" [style.color]="areaColor(item.areaCode)">
-                    <span class="dot-sm" [style.background]="areaColor(item.areaCode)"></span>
-                    {{ areaShort(item.areaCode) }}
-                  </div>
-                  <button class="btn btn-dark btn-sm" (click)="train(item)">Treinar</button>
+
+                  @if (item.resources.length) {
+                    <button class="plan-toggle" (click)="toggle(item)"
+                            [attr.aria-expanded]="isExpanded(item)"
+                            [attr.aria-label]="(isExpanded(item) ? 'Ocultar' : 'Ver') + ' recomendações de ' + item.topic">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"
+                           class="chevron" [class.chevron-open]="isExpanded(item)"><path d="M6 9l6 6 6-6"/></svg>
+                      {{ isExpanded(item) ? 'Ocultar recomendações' : 'Ver recomendações' }}
+                      <span class="toggle-count">{{ videoCount(item) }} vídeos · {{ exerciseCount(item) }} links</span>
+                    </button>
+
+                    @if (isExpanded(item)) {
+                      <div class="resources">
+                        @for (group of groups(item); track group.kind) {
+                          <section class="resource-group">
+                            <h3 class="resource-title">{{ group.label }}</h3>
+                            <div class="resource-list">
+                              @for (r of group.resources; track r.url) {
+                                <a class="resource" [href]="r.url" target="_blank" rel="noopener noreferrer">
+                                  <span class="resource-icon" [class]="'resource-icon-' + r.kind">
+                                    @switch (r.kind) {
+                                      @case ('video') {
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5-11-6.5z"/></svg>
+                                      }
+                                      @case ('exercicio') {
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                                      }
+                                      @default {
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 012-2h13v18H6.5A2.5 2.5 0 004 19.5z"/><path d="M8 7h7M8 11h7"/></svg>
+                                      }
+                                    }
+                                  </span>
+                                  <span class="resource-text">
+                                    <span class="resource-provider">{{ r.provider }}</span>
+                                    <span class="resource-label">{{ r.title }}</span>
+                                    @if (r.description) { <span class="resource-desc">{{ r.description }}</span> }
+                                  </span>
+                                  <svg class="resource-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg>
+                                </a>
+                              }
+                            </div>
+                          </section>
+                        }
+                        <p class="resource-note">
+                          Os links abrem a busca pelo conteúdo <strong>{{ item.topic }}</strong> dentro de cada fonte.
+                        </p>
+                      </div>
+                    }
+                  }
                 </div>
               </div>
             </div>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      } @else {
+        <p class="schedule-intro">
+          Sugestão de divisão dos {{ scheduledTopics() }} conteúdos mais críticos ao longo da semana, com cerca de
+          duas horas por dia e sem repetir a mesma área no mesmo dia.
+        </p>
+
+        <div class="schedule">
+          @for (day of d.schedule; track day.day) {
+            <div class="card day-card">
+              <header class="day-head">
+                <span class="day-name">{{ day.day }}</span>
+                <span class="day-total">{{ duration(day.totalMinutes) }}</span>
+              </header>
+              <div class="day-tasks">
+                @for (task of day.tasks; track $index) {
+                  <div class="task">
+                    <span class="task-accent" [style.background]="task.areaCode ? areaColor(task.areaCode) : '#C7CDDA'"></span>
+                    <div class="task-body">
+                      <div class="task-topic">{{ task.topic }}</div>
+                      <div class="task-subject">{{ task.subject }} · {{ duration(task.minutes) }}</div>
+                      <div class="task-activity">{{ task.activity }}</div>
+                    </div>
+                    <button class="btn btn-soft btn-sm task-btn" (click)="openTask(task)">
+                      {{ taskLabels[task.action] }}
+                    </button>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
     }
   }
 </div>

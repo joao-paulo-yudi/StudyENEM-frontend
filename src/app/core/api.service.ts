@@ -92,15 +92,43 @@ export interface TopicPerformanceDto {
   difficultyIndex: number; averageTimeSeconds: number | null;
 }
 export interface ComparisonDto { currentPercentage: number; previousPercentage: number; percentageDelta: number; triAverageDelta: number | null; }
-export interface StudyPlanItemDto {
-  topicId: number; topic: string; subject: string; areaCode: AreaCode;
-  priority: Priority; difficultyIndex: number; mastery: number; attempts: number; reason: string;
-}
 export interface PerformanceSummaryDto {
   studentName: string; totalAttempts: number; totalQuestions: number; totalCorrect: number;
   totalTimeSeconds: number; averageTimePerQuestion: number | null; triAverage: number | null;
   byArea: AreaPerformanceDto[]; bySubject: SubjectPerformanceDto[]; byTopic: TopicPerformanceDto[];
   history: AttemptSummaryDto[]; lastComparison: ComparisonDto | null; studyPlan: StudyPlanItemDto[];
+}
+
+// ── Plano de estudos ────────────────────────────────────────────────────────
+export interface StudyPlanItemDto {
+  topicId: number; topic: string; subject: string; areaCode: AreaCode;
+  priority: Priority; difficultyIndex: number; mastery: number; attempts: number; reason: string;
+  /** Posição do conteúdo na ordem sugerida de estudo. */
+  step: number;
+  estimatedMinutes: number;
+  recommendedQuestions: number;
+  /** Vazia no resumo do dashboard; preenchida em GET /studyplan. */
+  resources: StudyResourceDto[];
+}
+
+export type ResourceKind = 'video' | 'exercicio' | 'material';
+
+/** Fonte de estudo recomendada, já com a busca do conteúdo aplicada à URL. */
+export interface StudyResourceDto {
+  kind: ResourceKind; title: string; provider: string; url: string; description: string | null;
+}
+export type TaskAction = 'treinar' | 'simulado' | 'revisar';
+
+export interface StudyPlanTaskDto {
+  /** Nulo nas tarefas que não são de um conteúdo (simulado e revisão de domingo). */
+  topicId: number | null;
+  topic: string; subject: string; areaCode: AreaCode | null; activity: string; minutes: number;
+  action: TaskAction;
+}
+export interface StudyPlanDayDto { day: string; totalMinutes: number; tasks: StudyPlanTaskDto[]; }
+export interface StudyPlanDto {
+  totalTopics: number; highPriority: number; mediumPriority: number; lowPriority: number;
+  estimatedMinutes: number; items: StudyPlanItemDto[]; schedule: StudyPlanDayDto[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -123,4 +151,5 @@ export class ApiService {
   getAttemptResult(id: number) { return this.http.get<AttemptResultDto>(`${this.base}/attempts/${id}`); }
   getHistory() { return this.http.get<AttemptSummaryDto[]>(`${this.base}/attempts`); }
   getPerformance() { return this.http.get<PerformanceSummaryDto>(`${this.base}/dashboard`); }
+  getStudyPlan() { return this.http.get<StudyPlanDto>(`${this.base}/studyplan`); }
 }
