@@ -13,8 +13,9 @@ export interface LoginDto { identifier: string; password: string; }
 export interface RegisterDto { name: string; email: string; password: string; }
 /** ID token devolvido pelo Google Identity Services. */
 export interface GoogleLoginDto { credential: string; }
-/** Provedores de login habilitados no servidor. */
-export interface AuthConfigDto { googleClientId: string | null; }
+/** Provedores de login social; o servidor lista só os que estão configurados. */
+export type SocialProvider = 'google' | 'microsoft';
+export interface AuthConfigDto { providers: SocialProvider[]; googleClientId: string | null; }
 
 // ── Banco de questões ───────────────────────────────────────────────────────
 export interface TopicDto { id: number; name: string; questionCount: number; }

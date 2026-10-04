@@ -206,6 +206,9 @@ input:focus, select:focus { border-color: var(--orange); }
 }
 .login-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(242,107,58,.15); }
 
+/* Em telas estreitas o painel de marca dá lugar ao formulário (que mostra .login-mobile-brand) */
+@media (max-width: 880px) { .login-brand { display: none; } }
+
 /* ── Breakpoints ──────────────────────────────────────────── */
 
 /* Telas médias: menos respiro e painéis largos empilhados */
